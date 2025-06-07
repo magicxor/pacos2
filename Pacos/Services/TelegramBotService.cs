@@ -150,6 +150,84 @@ public class TelegramBotService
                         }
                     }
                 }
+                // Handle command for video generation
+                else if (message.StartsWith(Const.VideoCommand, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    var prompt = message.Substring(Const.VideoCommand.Length).Trim();
+                    _logger.LogInformation("Processing {Command} command from {Author} with prompt: {Prompt}", Const.VideoCommand, author, prompt);
+
+                    if (update.Message.Photo != null && update.Message.Photo.Length > 0)
+                    {
+                        // Image-to-Video
+                        var photoSize = update.Message.Photo.Last();
+                        var fileInfo = await botClient.GetFile(photoSize.FileId, cancellationToken);
+
+                        await using var memoryStream = new MemoryStream();
+                        await botClient.DownloadFile(fileInfo.FilePath ?? string.Empty, memoryStream, cancellationToken);
+                        var imageBytes = memoryStream.ToArray();
+                        var mimeType = fileInfo.FilePath?.Split('.').LastOrDefault() switch
+                        {
+                            "png" => "image/png",
+                            "webp" => "image/webp",
+                            _ => "image/jpeg"
+                        };
+
+                        var (generatedVideoData, error) = await _generativeModelService.GenerateImageToVideoAsync(prompt, imageBytes, mimeType);
+                        if (generatedVideoData != null)
+                        {
+                            await botClient.SendVideo(
+                                chatId: update.Message.Chat.Id,
+                                video: new InputFileStream(new MemoryStream(generatedVideoData), "generated_video.mp4"),
+                                caption: prompt.Cut(Const.MaxTelegramCaptionLength),
+                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                                cancellationToken: cancellationToken);
+                            _logger.LogInformation("Sent image-to-video result to {Author}", author);
+                        }
+                        else
+                        {
+                            await botClient.SendMessage(
+                                chatId: update.Message.Chat.Id,
+                                text: $"Sorry, couldn't generate video from image: {error}\n(Note: Video model support is experimental and may not be fully configured.)",
+                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                                cancellationToken: cancellationToken);
+                            _logger.LogWarning("Failed image-to-video for {Author}: {Error}", author, error);
+                        }
+                    }
+                    else
+                    {
+                        // Text-to-Video
+                        if (string.IsNullOrWhiteSpace(prompt))
+                        {
+                            await botClient.SendMessage(
+                                chatId: update.Message.Chat.Id,
+                                text: $"Please provide a prompt for {Const.VideoCommand}. Example: {Const.VideoCommand} a running dog",
+                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                                cancellationToken: cancellationToken);
+                            return;
+                        }
+
+                        var (generatedVideoData, error) = await _generativeModelService.GenerateTextToVideoAsync(prompt);
+                        if (generatedVideoData != null)
+                        {
+                            await botClient.SendVideo(
+                                chatId: update.Message.Chat.Id,
+                                video: new InputFileStream(new MemoryStream(generatedVideoData), "generated_video.mp4"),
+                                caption: prompt.Cut(Const.MaxTelegramCaptionLength),
+                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                                cancellationToken: cancellationToken);
+                            _logger.LogInformation("Sent text-to-video result to {Author}", author);
+                        }
+                        else
+                        {
+                            await botClient.SendMessage(
+                                chatId: update.Message.Chat.Id,
+                                text: $"Sorry, couldn't generate video from text: {error}\n(Note: Video model support is experimental and may not be fully configured.)",
+                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                                cancellationToken: cancellationToken);
+                            _logger.LogWarning("Failed text-to-video for {Author}: {Error}", author, error);
+                        }
+                    }
+                }
                 // Existing mention-based logic
                 else if (Const.Mentions.Any(mention => message.StartsWith(mention, StringComparison.InvariantCultureIgnoreCase)))
                 {

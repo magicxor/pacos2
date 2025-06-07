@@ -7,7 +7,7 @@ namespace Pacos.Services;
 
 public class GenerativeModelService
 {
-    private readonly GenerativeModel _generativeModel;
+    private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<GenerativeModelService> _logger;
 
     private static List<SafetySetting> GetSafetySettings()
@@ -23,47 +23,47 @@ public class GenerativeModelService
 
     private static List<SafetySetting> GetImgSafetySettings()
     {
-        return new List<SafetySetting>
-        {
+        return
+        [
             new()
             {
                 Category = HarmCategory.HARM_CATEGORY_HATE_SPEECH,
                 Threshold = HarmBlockThreshold.OFF,
             },
+
             new()
             {
                 Category = HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
                 Threshold = HarmBlockThreshold.OFF,
             },
+
             new()
             {
                 Category = HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
                 Threshold = HarmBlockThreshold.OFF,
             },
+
             new()
             {
                 Category = HarmCategory.HARM_CATEGORY_HARASSMENT,
                 Threshold = HarmBlockThreshold.OFF,
             },
+
             new()
             {
                 Category = HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
                 Threshold = HarmBlockThreshold.OFF,
             },
-        };
+
+        ];
     }
 
-    public GenerativeModelService(IOptions<PacosOptions> options, ILogger<GenerativeModelService> logger)
+    public GenerativeModelService(
+        IOptions<PacosOptions> options,
+        ILogger<GenerativeModelService> logger)
     {
+        _options = options;
         _logger = logger;
-        var apiKey = options.Value.GoogleCloudApiKey;
-
-        // Using a model that supports vision for both text-to-image and image-to-image.
-        _generativeModel = new GenerativeModel(
-            apiKey: apiKey,
-            model: "gemini-2.0-flash-preview-image-generation",
-            new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
-            GetImgSafetySettings());
     }
 
     public async Task<(byte[]? imageData, string? errorMessage)> GenerateTextToImageAsync(string prompt)
@@ -73,7 +73,12 @@ public class GenerativeModelService
             _logger.LogInformation("Attempting text-to-image generation for prompt: {Prompt}", prompt);
 
             var fullPrompt = $"Generate an image of: {prompt}";
-            var response = await _generativeModel.GenerateContentAsync(fullPrompt);
+            var generativeModel = new GenerativeModel(
+                apiKey: _options.Value.GoogleCloudApiKey,
+                model: "gemini-2.0-flash-preview-image-generation",
+                new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
+                GetImgSafetySettings());
+            var response = await generativeModel.GenerateContentAsync(fullPrompt);
 
             if (response.Candidates is { Length: > 0 })
             {
@@ -87,12 +92,14 @@ public class GenerativeModelService
                         _logger.LogInformation("Successfully generated image from text prompt: {Prompt}", prompt);
                         return (Convert.FromBase64String(imagePart.InlineData?.Data ?? string.Empty), null);
                     }
+
                     _logger.LogWarning("No image part found in response for text prompt: {Prompt}. Response text: {Text}", prompt, response.Text);
                 }
             }
+
             return (null, "Could not extract image from the response. The model might not have generated one.");
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error during text-to-image generation for prompt: {Prompt}", prompt);
             return (null, $"An error occurred while generating the image: {ex.Message}");
@@ -117,7 +124,12 @@ public class GenerativeModelService
 
             var contentParts = new List<Part> { imagePartContent, textPartContent };
 
-            var response = await _generativeModel.GenerateContentAsync(contentParts.ToArray());
+            var generativeModel = new GenerativeModel(
+                apiKey: _options.Value.GoogleCloudApiKey,
+                model: "gemini-2.0-flash-preview-image-generation",
+                new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
+                GetImgSafetySettings());
+            var response = await generativeModel.GenerateContentAsync(contentParts.ToArray());
 
             if (response.Candidates is { Length: > 0 })
             {
@@ -130,15 +142,102 @@ public class GenerativeModelService
                         _logger.LogInformation("Successfully generated image from image input with prompt: {Prompt}", prompt);
                         return (Convert.FromBase64String(outputImagePart.InlineData?.Data ?? string.Empty), null);
                     }
+
                     _logger.LogWarning("No output image part found in image-to-image response for prompt: {Prompt}. Response text: {Text}", prompt, response.Text);
                 }
             }
+
             return (null, "Could not extract modified image from the response. The model might not have generated one.");
         }
         catch (System.Exception ex)
         {
             _logger.LogError(ex, "Error during image-to-image generation for prompt: {Prompt}", prompt);
             return (null, $"An error occurred while processing the image: {ex.Message}");
+        }
+    }
+
+    public async Task<(byte[]? videoData, string? errorMessage)> GenerateTextToVideoAsync(string prompt, string modelName = "veo-3.0-generate-preview")
+    {
+        try
+        {
+            _logger.LogInformation("Attempting image-to-video generation for prompt: {Prompt} using model: {ModelName}", prompt, modelName);
+
+            var vertexAi = new VertexAI(_options.Value.GoogleCloudProjectId, "us-east1-c", apiKey: _options.Value.GoogleCloudApiKey);
+            var generativeModel = vertexAi.CreateVideoGenerationModel("veo-2.0-generate-001");
+            var response = await generativeModel.GenerateVideosAsync(new GenerateVideosRequest()
+            {
+                Prompt = prompt,
+                Config = new GenerateVideosConfig
+                {
+                    DurationSeconds = 10,
+                    Fps = 30,
+                    NumberOfVideos = 1,
+                    EnhancePrompt = true,
+                    Resolution = VideoResolution.SD_480P,
+                    AspectRatio = VideoAspectRatio.LANDSCAPE_16_9,
+                },
+                Model = "veo-2.0-generate-001",
+            });
+
+            if (response?.Result != null && response.Result.GeneratedVideos?.Any() == true)
+            {
+                var candidate = response.Result.GeneratedVideos.First();
+                if (candidate.VideoBytes is { Length: > 0 })
+                {
+                    _logger.LogInformation("Successfully generated video from image input with prompt: {Prompt}", prompt);
+                    return (candidate.VideoBytes, null);
+                }
+            }
+
+            return (null, "Could not extract video from the response. The model might not have generated one or the model used does not support video output.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Error during image-to-video generation for prompt: {Prompt}", prompt);
+            return (null, $"An error occurred while processing the image for video generation: {ex.Message}");
+        }
+    }
+
+    public async Task<(byte[]? videoData, string? errorMessage)> GenerateImageToVideoAsync(string prompt, byte[] inputImageBytes, string imageMimeType = "image/jpeg", string modelName = "veo-3.0-generate-preview")
+    {
+        try
+        {
+            _logger.LogInformation("Attempting image-to-video generation for prompt: {Prompt} using model: {ModelName}", prompt, modelName);
+
+            var vertexAi = new VertexAI(_options.Value.GoogleCloudProjectId, "us-east1-c", apiKey: _options.Value.GoogleCloudApiKey);
+            var generativeModel = vertexAi.CreateVideoGenerationModel("veo-2.0-generate-001");
+            var response = await generativeModel.GenerateVideosAsync(new GenerateVideosRequest()
+            {
+                Prompt = prompt,
+                Image = new ImageSample {ImageBytes = inputImageBytes},
+                Config = new GenerateVideosConfig
+                {
+                    DurationSeconds = 10,
+                    Fps = 30,
+                    NumberOfVideos = 1,
+                    EnhancePrompt = true,
+                    Resolution = VideoResolution.SD_480P,
+                    AspectRatio = VideoAspectRatio.LANDSCAPE_16_9,
+                },
+                Model = "veo-2.0-generate-001",
+            });
+
+            if (response?.Result != null && response.Result.GeneratedVideos?.Any() == true)
+            {
+                var candidate = response.Result.GeneratedVideos.First();
+                if (candidate.VideoBytes is { Length: > 0 })
+                {
+                    _logger.LogInformation("Successfully generated video from image input with prompt: {Prompt}", prompt);
+                    return (candidate.VideoBytes, null);
+                }
+            }
+
+            return (null, "Could not extract video from the response. The model might not have generated one or the model used does not support video output.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Error during image-to-video generation for prompt: {Prompt}", prompt);
+            return (null, $"An error occurred while processing the image for video generation: {ex.Message}");
         }
     }
 }
