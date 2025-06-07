@@ -2,7 +2,6 @@
 
 public static class Const
 {
-    public const int MaxTelegramMessageLength = 4096;
     public static readonly string[] Mentions = ["пакос", "pacos"];
     public const string SystemPrompt = $"""
                                         Ты - полезный чат-бот в групповом чате, тебя зовут Пакос.
@@ -25,4 +24,7 @@ public static class Const
 
     public const int MaxContextLength = 2_307_692;
     public const int MaxAllowedContextLength = 750_000;
+    public const int MaxTelegramMessageLength = 4096;
+    public const int MaxTelegramCaptionLength = 1024;
+    public const string DrawCommand = "!drawx";
 }

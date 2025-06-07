@@ -67,6 +67,7 @@ public class Program
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load("Core14.profile.xml"));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
                 services.AddSingleton<ChatService>();
+                services.AddSingleton<GenerativeModelService>();
                 services.AddSingleton<TelegramBotService>();
                 services.AddHostedService<Worker>();
             })
