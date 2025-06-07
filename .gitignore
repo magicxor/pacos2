@@ -404,3 +404,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+.idea/
+.sonarqube/
+Pacos/appsettings.json
+Pacos/banwords.txt
