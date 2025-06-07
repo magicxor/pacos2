@@ -9,23 +9,23 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Google_GenerativeAI.Microsoft" Version="2.7.0" />
-        <PackageReference Include="Humanizer.Core" Version="2.14.1" />
-        <PackageReference Include="Microsoft.Extensions.AI" Version="9.5.0" />
-        <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="9.5.0" />
-        <PackageReference Include="Microsoft.Extensions.AI.Evaluation" Version="9.5.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="9.0.5" />
-        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="NLog" Version="5.5.0" />
-        <PackageReference Include="NLog.Extensions.Logging" Version="5.5.0" />
-        <PackageReference Include="NTextCat" Version="0.3.65" />
-        <PackageReference Include="Polly" Version="8.5.2" />
-        <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-        <PackageReference Include="Refit" Version="8.0.0" />
-        <PackageReference Include="Telegram.Bot" Version="22.5.1" />
+        <PackageReference Include="Google_GenerativeAI.Microsoft" />
+        <PackageReference Include="Humanizer.Core" />
+        <PackageReference Include="Microsoft.Extensions.AI" />
+        <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.AI.Evaluation" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" />
+        <PackageReference Include="Microsoft.Extensions.Http.Polly" />
+        <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
+        <PackageReference Include="Newtonsoft.Json" />
+        <PackageReference Include="NLog" />
+        <PackageReference Include="NLog.Extensions.Logging" />
+        <PackageReference Include="NTextCat" />
+        <PackageReference Include="Polly" />
+        <PackageReference Include="Polly.Contrib.WaitAndRetry" />
+        <PackageReference Include="Refit" />
+        <PackageReference Include="Telegram.Bot" />
     </ItemGroup>
 
     <ItemGroup>
