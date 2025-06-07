@@ -4,7 +4,6 @@ public static class Const
 {
     public const int MaxTelegramMessageLength = 4096;
     public static readonly string[] Mentions = ["пакос", "pacos"];
-    public const string InstructionMarker = "!";
     public const string SystemPrompt = $"""
                                         Ты - полезный чат-бот в групповом чате, тебя зовут Пакос.
                                         Сообщения в чате идут в формате:

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using NTextCat;
 using Pacos.Constants;
+using Pacos.Extensions;
 using Pacos.Models.Options;
 using Pacos.Services.BackgroundTasks;
 using Telegram.Bot;
@@ -85,6 +86,7 @@ public class TelegramBotService
                         _ when _wordFilter.ContainsBannedWords(message) => "ты пидор, кстати",
                         _ => await _chatService.GetResponseAsync(update.Message.Chat.Id, $"{author}: {message}"),
                     };
+                    replyText = replyText.Cut(Const.MaxTelegramMessageLength);
                 }
                 catch (Exception e)
                 {
