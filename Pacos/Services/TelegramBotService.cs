@@ -260,18 +260,49 @@ public class TelegramBotService
                     var language = _rankedLanguageIdentifier.Identify(message).FirstOrDefault();
                     var languageCode = language?.Item1?.Iso639_3 ?? "eng";
 
-                    _logger.LogInformation("Processing the prompt from {Author} (lang={LanguageCode}): {UpdateMessageTextTrimmed}",
-                        author, languageCode, message);
+                    // Determine the full message to send to the LLM, including replied-to message if present
+                    string fullMessageToLLM;
+                    string originalMessageLogInfo = string.Empty;
+
+                    if (update.Message.ReplyToMessage != null)
+                    {
+                        var repliedToMessageText = (update.Message.ReplyToMessage.Text ?? update.Message.ReplyToMessage.Caption ?? string.Empty).Trim();
+                        if (!string.IsNullOrEmpty(repliedToMessageText))
+                        {
+                            var repliedToAuthor = update.Message.ReplyToMessage.From?.Username ??
+                                                  string.Join(' ', update.Message.ReplyToMessage.From?.FirstName, update.Message.ReplyToMessage.From?.LastName).Trim();
+                            if (string.IsNullOrWhiteSpace(repliedToAuthor))
+                            {
+                                repliedToAuthor = "Original Poster"; // Fallback if author is not available
+                            }
+
+                            fullMessageToLLM = $"{author} (replying to {repliedToAuthor}): {message}\n\n--- Original Message by {repliedToAuthor}: ---\n{repliedToMessageText}";
+                            originalMessageLogInfo = $" | Original by {repliedToAuthor}: \"{repliedToMessageText.Cut(50)}\""; // Cut for brevity in logs
+                        }
+                        else
+                        {
+                            fullMessageToLLM = $"{author}: {message}"; // ReplyToMessage exists but has no text/caption
+                        }
+                    }
+                    else
+                    {
+                        fullMessageToLLM = $"{author}: {message}"; // Not a reply
+                    }
+
+                    _logger.LogInformation("Processing prompt from {Author} (lang={LanguageCode}): \"{UserMessage}\"{OriginalMessageLog}",
+                        author, languageCode, message, originalMessageLogInfo); // Log user's message and info about replied message
 
                     var replyText = string.Empty;
 
                     try
                     {
+                        // The switch for language/banned words still operates on the user's current message (`message`)
                         replyText = message switch
                         {
                             _ when languageCode is not "rus" and not "eng" => "хуйню спизданул",
                             _ when _wordFilter.ContainsBannedWords(message) => "ты пидор, кстати",
-                            _ => await _chatService.GetResponseAsync(update.Message.Chat.Id, $"{author}: {message}"),
+                            // Pass the potentially combined message to the chat service
+                            _ => await _chatService.GetResponseAsync(update.Message.Chat.Id, fullMessageToLLM),
                         };
                         replyText = replyText.Cut(Const.MaxTelegramMessageLength);
                     }
