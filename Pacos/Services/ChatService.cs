@@ -53,9 +53,10 @@ public class ChatService
                 Role = ChatRole.User,
             };
 
-            chatHistory.Add(userMessage);
+            var responseObject = await _chatClient.GetResponseAsync(chatHistory.Concat([userMessage]));
 
-            var responseObject = await _chatClient.GetResponseAsync(chatHistory);
+            chatHistory.Add(new ChatMessage(ChatRole.User, messageText));
+
             var responseText = responseObject.Text;
             var dataContents = responseObject.Messages
                 .SelectMany(x => x.Contents
@@ -63,7 +64,7 @@ public class ChatService
                 .ToList()
                 .AsReadOnly();
 
-            chatHistory.AddRange(responseObject.Messages);
+            chatHistory.Add(new ChatMessage(ChatRole.Assistant, responseText));
 
             return (responseText, dataContents);
         }
