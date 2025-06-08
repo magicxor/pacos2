@@ -303,19 +303,8 @@ public class TelegramBotService
                     _logger.LogInformation("Processing prompt from {Author} (lang={LanguageCode}): \"{UserMessage}\"{OriginalMessageLog}",
                         author, languageCode, message, originalMessageLogInfo); // Log user's message and info about replied message
 
-                    byte[]? imageBytes;
-                    string? imageMimeType;
-
-                    // Try to get image from current message
-                    (imageBytes, imageMimeType) = await DownloadImageIfPresentAsync(
-                        update.Message.Photo, botClient, cancellationToken, $"current message from {author}");
-
-                    // If not found in current message, try replied message
-                    if (imageBytes == null && update.Message.ReplyToMessage != null)
-                    {
-                        (imageBytes, imageMimeType) = await DownloadImageIfPresentAsync(
-                            update.Message.ReplyToMessage.Photo, botClient, cancellationToken, $"replied-to message for {author}");
-                    }
+                    var mediaInfo = GetFileInfo(update.Message) ?? GetFileInfo(update.Message.ReplyToMessage);
+                    var mediaBytes = await DownloadMediaIfPresentAsync(mediaInfo?.FileId, botClient, cancellationToken);
 
                     var replyText = string.Empty;
 
@@ -332,8 +321,8 @@ public class TelegramBotService
                                     update.Message.Id,
                                     author,
                                     fullMessageToLlm,
-                                    imageBytes,
-                                    imageMimeType ?? "image/jpeg"
+                                    mediaBytes,
+                                    mediaInfo?.MimeType
                                  )).Text,
                         };
                         replyText = replyText.Cut(Const.MaxTelegramMessageLength);
@@ -362,22 +351,35 @@ public class TelegramBotService
         }
     }
 
-    private async Task<(byte[]? ImageBytes, string? MimeType)> DownloadImageIfPresentAsync(
-        PhotoSize[]? photos,
-        ITelegramBotClient botClient,
-        CancellationToken cancellationToken,
-        string logContextDetails)
+    private (string FileId, string MimeType)? GetFileInfo(Message? message)
     {
-        if (photos != null && photos.Length > 0)
+        return message switch
         {
-            _logger.LogInformation("Attempting to download image from {LogContextDetails} for mention", logContextDetails);
-            var photoSize = photos.Last(); // Get the largest available photo
-            var fileInfo = await botClient.GetFile(photoSize.FileId, cancellationToken);
+            { Photo: [.., var lastPhoto] } => (lastPhoto.FileId, "image/jpeg"),
+            { Video: { } video } => (video.FileId, video.MimeType ?? "video/mp4"),
+            { VideoNote: { } videoNote } => (videoNote.FileId, "video/mp4"),
+            { Audio: { } audio } => (audio.FileId, audio.MimeType ?? "audio/mpeg"),
+            { Voice: { } voice } => (voice.FileId, voice.MimeType ?? "audio/ogg"),
+            { Animation: { } animation } => (animation.FileId, animation.MimeType ?? "video/mp4"),
+            { Sticker: { } sticker } => (sticker.FileId, sticker.Type == StickerType.Regular ? "image/webp" : "application/octet-stream"),
+            _ => null,
+        };
+    }
+
+    private async Task<byte[]?> DownloadMediaIfPresentAsync(
+        string? fileId,
+        ITelegramBotClient botClient,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrEmpty(fileId))
+        {
+            _logger.LogDebug("Downloading media with fileId={FileId}", fileId);
+            var fileInfo = await botClient.GetFile(fileId, cancellationToken);
 
             if (string.IsNullOrEmpty(fileInfo.FilePath))
             {
-                _logger.LogWarning("File path is null or empty for photo in {LogContextDetails}. Cannot download", logContextDetails);
-                return (null, null);
+                _logger.LogWarning("FilePath is null or empty for fileId={FileId}. Cannot download media", fileId);
+                return null;
             }
 
             try
@@ -385,25 +387,16 @@ public class TelegramBotService
                 await using var memoryStream = new MemoryStream();
                 await botClient.DownloadFile(fileInfo.FilePath, memoryStream, cancellationToken);
                 var downloadedImageBytes = memoryStream.ToArray();
-                var mimeType = fileInfo.FilePath.Split('.').LastOrDefault()?.ToLowerInvariant() switch
-                {
-                    "png" => "image/png",
-                    "webp" => "image/webp",
-                    "jpg" => "image/jpeg",
-                    "jpeg" => "image/jpeg",
-                    _ => "image/jpeg" // Default MIME type
-                };
-                _logger.LogInformation("Successfully downloaded image from {LogContextDetails} for mention. Size: {Size} bytes, MIME: {MimeType}",
-                    logContextDetails, downloadedImageBytes.Length, mimeType);
-                return (downloadedImageBytes, mimeType);
+                _logger.LogInformation("Successfully downloaded media with fileId={FileId}, size={Size} bytes", fileId, downloadedImageBytes.Length);
+                return downloadedImageBytes;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading image from {LogContextDetails} for mention. FilePath: {FilePath}", logContextDetails, fileInfo.FilePath);
-                return (null, null);
+                _logger.LogError(ex, "Error downloading media with fileId={FileId}", fileId);
+                return null;
             }
         }
-        return (null, null);
+        return null;
     }
 
     private Task HandlePollingErrorAsync(ITelegramBotClient botClient,

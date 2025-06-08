@@ -25,7 +25,7 @@ public class ChatService
         string authorName,
         string messageText,
         byte[]? inputImageBytes = null,
-        string inputImageMimeType = "image/jpeg")
+        string? inputImageMimeType = null)
     {
         await _semaphoreSlim.WaitAsync();
         try
@@ -40,7 +40,7 @@ public class ChatService
             }
 
             var inputContents = new List<AIContent> { new TextContent(messageText) };
-            if (inputImageBytes is not null)
+            if (inputImageBytes is not null && inputImageMimeType is not null)
             {
                 inputContents.Add(new DataContent(inputImageBytes, inputImageMimeType));
             }
