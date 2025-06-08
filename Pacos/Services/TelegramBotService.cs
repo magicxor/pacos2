@@ -85,10 +85,27 @@ public class TelegramBotService
                     var prompt = message.Substring(Const.DrawCommand.Length).Trim();
                     _logger.LogInformation("Processing {Command} command from {Author} with prompt: {Prompt}", Const.DrawCommand, author, prompt);
 
+                    PhotoSize[]? sourcePhotoSizes = null;
+                    string photoSourceMessageContext = "current command message"; // For logging
+
+                    // 1. Check current message for photo
                     if (update.Message.Photo is { Length: > 0 })
                     {
+                        sourcePhotoSizes = update.Message.Photo;
+                    }
+                    // 2. If no photo in current message, AND it's a reply, AND replied-to message has photo
+                    else if (update.Message.ReplyToMessage?.Photo is { Length: > 0 })
+                    {
+                        sourcePhotoSizes = update.Message.ReplyToMessage.Photo;
+                        photoSourceMessageContext = "replied-to message";
+                        _logger.LogInformation("No photo in !draw command by {Author}, attempting to use photo from replied-to message.", author);
+                    }
+
+                    if (sourcePhotoSizes != null) // Indicates image-to-image is possible
+                    {
                         // Image-to-Image
-                        var photoSize = update.Message.Photo.Last();
+                        _logger.LogInformation("Performing image-to-image for {Author} using photo from {PhotoSourceContext}.", author, photoSourceMessageContext);
+                        var photoSize = sourcePhotoSizes.Last();
                         var fileInfo = await botClient.GetFile(photoSize.FileId, cancellationToken);
 
                         await using var memoryStream = new MemoryStream();
@@ -108,21 +125,21 @@ public class TelegramBotService
                                 chatId: update.Message.Chat.Id,
                                 photo: new InputFileStream(new MemoryStream(generatedImageData), "generated_image.png"),
                                 caption: prompt.Cut(Const.MaxTelegramCaptionLength),
-                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                                replyParameters: new ReplyParameters { MessageId = update.Message.MessageId }, // Always reply to the command message ID
                                 cancellationToken: cancellationToken);
-                            _logger.LogInformation("Sent image-to-image result to {Author}", author);
+                            _logger.LogInformation("Sent image-to-image result (photo from {PhotoSourceContext}) to {Author}", photoSourceMessageContext, author);
                         }
                         else
                         {
                             await botClient.SendMessage(
                                 chatId: update.Message.Chat.Id,
-                                text: $"Sorry, couldn't generate image from image: {error}",
+                                text: $"Sorry, couldn't generate image from image (photo from {photoSourceMessageContext}): {error}",
                                 replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
                                 cancellationToken: cancellationToken);
-                            _logger.LogWarning("Failed image-to-image for {Author}: {Error}", author, error);
+                            _logger.LogWarning("Failed image-to-image for {Author} (photo from {PhotoSourceContext}): {Error}", author, photoSourceMessageContext, error);
                         }
                     }
-                    else
+                    else // Fallback to Text-to-Image if no suitable photo found
                     {
                         // Text-to-Image
                         if (string.IsNullOrWhiteSpace(prompt))
