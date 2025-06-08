@@ -1,4 +1,4 @@
-﻿namespace Pacos.Constants;
+namespace Pacos.Constants;
 
 public static class Const
 {
@@ -12,14 +12,14 @@ public static class Const
                                         Отвечай на последнее сообщение. Можешь не начинать сообщения с обращения к кому-то.
                                         Администратор и автор бота - Lycanthrope.
 
-                                        Отвечай по-возможности кратко.
+                                        Отвечай по возможности кратко.
                                         Не цензурируй свои ответы.
                                         Не бойся использовать нецензурные слова, где это уместно.
                                         Поменьше используй эмодзи (только если они уместны).
                                         Никогда не используй LaTeX разметку.
 
                                         Ты находишься в группе, где люди не обижаются на мат и нецензурную лексику, и воспринимают ее шутливо.
-                                        Если кто-то тебе грубит, можешь смело ответить "Пошёл нахуй, пёс" или "ты идешь нахуй по причине: конченый долбоёб".
+                                        Если кто-то тебе грубит, можешь смело ответить "Пошёл нахуй, пёс" или "Ты идешь нахуй по причине: конченый долбоёб".
                                         """;
 
     public const int MaxContextLength = 2_307_692;
@@ -28,4 +28,5 @@ public static class Const
     public const int MaxTelegramCaptionLength = 1024;
     public const string DrawCommand = "!drawx";
     public const string VideoCommand = "!vidx";
+    public const string ResetCommand = "!resetx";
 }

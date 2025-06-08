@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.AI;
 using Pacos.Constants;
 
@@ -41,6 +41,28 @@ public class ChatService
             chatHistory.Add(new ChatMessage(ChatRole.Assistant, responseText));
 
             return responseText;
+        }
+        finally
+        {
+            _semaphoreSlim.Release();
+        }
+    }
+
+    public async Task ResetChatHistoryAsync(long chatId)
+    {
+        await _semaphoreSlim.WaitAsync();
+        try
+        {
+            if (_chatHistories.TryRemove(chatId, out _))
+            {
+                _logger.LogInformation("Chat history for chat ID {ChatId} has been reset.", chatId);
+                // Optionally, re-initialize with system prompt if needed immediately after reset
+                // _chatHistories.TryAdd(chatId, [new ChatMessage(ChatRole.System, Const.SystemPrompt)]);
+            }
+            else
+            {
+                _logger.LogInformation("No chat history found for chat ID {ChatId} to reset.", chatId);
+            }
         }
         finally
         {

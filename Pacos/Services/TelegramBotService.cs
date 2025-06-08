@@ -59,6 +59,12 @@ public class TelegramBotService
             await HandleUpdateFunctionAsync(botClient, update, token));
     }
 
+    private bool Assign(string source, ref string destination)
+    {
+        destination = source;
+        return true;
+    }
+
     private async Task HandleUpdateFunctionAsync(ITelegramBotClient botClient,
         Update update,
         CancellationToken cancellationToken)
@@ -71,6 +77,7 @@ public class TelegramBotService
             {
                 var author = update.Message.From.Username ?? string.Join(' ', update.Message.From.FirstName, update.Message.From.LastName).Trim();
                 var message = (update.Message.Text ?? update.Message.Caption ?? string.Empty).Trim();
+                var currentMention = Const.Mentions.FirstOrDefault(mention => message.StartsWith(mention, StringComparison.InvariantCultureIgnoreCase));
 
                 // Handle draw command
                 if (message.StartsWith(Const.DrawCommand, StringComparison.InvariantCultureIgnoreCase))
@@ -149,6 +156,18 @@ public class TelegramBotService
                             _logger.LogWarning("Failed text-to-image for {Author}: {Error}", author, error);
                         }
                     }
+                }
+                // Handle reset command
+                else if (message.Equals(Const.ResetCommand, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    _logger.LogInformation("Processing {Command} command from {Author} in chat {ChatId}", Const.ResetCommand, author, update.Message.Chat.Id);
+                    await _chatService.ResetChatHistoryAsync(update.Message.Chat.Id);
+                    await botClient.SendMessage(
+                        chatId: update.Message.Chat.Id,
+                        text: "Chat history has been reset for this chat.",
+                        replyParameters: new ReplyParameters { MessageId = update.Message.MessageId },
+                        cancellationToken: cancellationToken);
+                    _logger.LogInformation("Sent chat history reset confirmation to {Author} in chat {ChatId}", author, update.Message.Chat.Id);
                 }
                 // Handle command for video generation
                 else if (message.StartsWith(Const.VideoCommand, StringComparison.InvariantCultureIgnoreCase))
@@ -229,8 +248,15 @@ public class TelegramBotService
                     }
                 }
                 // Existing mention-based logic
-                else if (Const.Mentions.Any(mention => message.StartsWith(mention, StringComparison.InvariantCultureIgnoreCase)))
+                else if (!string.IsNullOrEmpty(currentMention))
                 {
+                    // Remove the mention from the message
+                    message = message.Substring(currentMention.Length).TrimStart(',', ' ', '.', '!', '?', ':', ';').Trim();
+                    if (string.IsNullOrEmpty(message))
+                    {
+                        return;
+                    }
+
                     var language = _rankedLanguageIdentifier.Identify(message).FirstOrDefault();
                     var languageCode = language?.Item1?.Iso639_3 ?? "eng";
 
