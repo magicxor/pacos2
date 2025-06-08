@@ -19,28 +19,53 @@ public class ChatService
         _chatClient = chatClient;
     }
 
-    public async Task<string> GetResponseAsync(long chatId, string message)
+    public async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetResponseAsync(
+        long chatId,
+        long messageId,
+        string authorName,
+        string messageText,
+        byte[]? inputImageBytes = null,
+        string inputImageMimeType = "image/jpeg")
     {
         await _semaphoreSlim.WaitAsync();
         try
         {
             var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [new ChatMessage(ChatRole.System, Const.SystemPrompt)]);
 
-            if (chatHistory.Sum(x => x.Text.Length) + message.Length is var numberOfCharacters and > Const.MaxAllowedContextLength)
+            if (chatHistory.Sum(x => x.Text.Length) + messageText.Length is var numberOfCharacters and > Const.MaxAllowedContextLength)
             {
                 _logger.LogWarning("Chat history is too long ({NumberOfCharacters} characters), clearing history", numberOfCharacters);
                 chatHistory.Clear();
                 chatHistory.Add(new ChatMessage(ChatRole.System, Const.SystemPrompt));
             }
 
-            chatHistory.Add(new ChatMessage(ChatRole.User, message));
+            var inputContents = new List<AIContent> { new TextContent(messageText) };
+            if (inputImageBytes is not null)
+            {
+                inputContents.Add(new DataContent(inputImageBytes, inputImageMimeType));
+            }
+
+            var userMessage = new ChatMessage
+            {
+                MessageId  = messageId.ToString(),
+                AuthorName = authorName,
+                Contents = inputContents,
+                Role = ChatRole.User,
+            };
+
+            chatHistory.Add(userMessage);
 
             var responseObject = await _chatClient.GetResponseAsync(chatHistory);
             var responseText = responseObject.Text;
+            var dataContents = responseObject.Messages
+                .SelectMany(x => x.Contents
+                    .OfType<DataContent>())
+                .ToList()
+                .AsReadOnly();
 
-            chatHistory.Add(new ChatMessage(ChatRole.Assistant, responseText));
+            chatHistory.AddRange(responseObject.Messages);
 
-            return responseText;
+            return (responseText, dataContents);
         }
         finally
         {
@@ -55,13 +80,11 @@ public class ChatService
         {
             if (_chatHistories.TryRemove(chatId, out _))
             {
-                _logger.LogInformation("Chat history for chat ID {ChatId} has been reset.", chatId);
-                // Optionally, re-initialize with system prompt if needed immediately after reset
-                // _chatHistories.TryAdd(chatId, [new ChatMessage(ChatRole.System, Const.SystemPrompt)]);
+                _logger.LogInformation("Chat history for chat ID {ChatId} has been reset", chatId);
             }
             else
             {
-                _logger.LogInformation("No chat history found for chat ID {ChatId} to reset.", chatId);
+                _logger.LogInformation("No chat history found for chat ID {ChatId} to reset", chatId);
             }
         }
         finally

@@ -59,12 +59,6 @@ public class TelegramBotService
             await HandleUpdateFunctionAsync(botClient, update, token));
     }
 
-    private bool Assign(string source, ref string destination)
-    {
-        destination = source;
-        return true;
-    }
-
     private async Task HandleUpdateFunctionAsync(ITelegramBotClient botClient,
         Update update,
         CancellationToken cancellationToken)
@@ -98,13 +92,13 @@ public class TelegramBotService
                     {
                         sourcePhotoSizes = update.Message.ReplyToMessage.Photo;
                         photoSourceMessageContext = "replied-to message";
-                        _logger.LogInformation("No photo in !draw command by {Author}, attempting to use photo from replied-to message.", author);
+                        _logger.LogInformation("No photo in !draw command by {Author}, attempting to use photo from replied-to message", author);
                     }
 
                     if (sourcePhotoSizes != null) // Indicates image-to-image is possible
                     {
                         // Image-to-Image
-                        _logger.LogInformation("Performing image-to-image for {Author} using photo from {PhotoSourceContext}.", author, photoSourceMessageContext);
+                        _logger.LogInformation("Performing image-to-image for {Author} using photo from {PhotoSourceContext}", author, photoSourceMessageContext);
                         var photoSize = sourcePhotoSizes.Last();
                         var fileInfo = await botClient.GetFile(photoSize.FileId, cancellationToken);
 
@@ -278,7 +272,7 @@ public class TelegramBotService
                     var languageCode = language?.Item1?.Iso639_3 ?? "eng";
 
                     // Determine the full message to send to the LLM, including replied-to message if present
-                    string fullMessageToLLM;
+                    string fullMessageToLlm;
                     string originalMessageLogInfo = string.Empty;
 
                     if (update.Message.ReplyToMessage != null)
@@ -293,21 +287,35 @@ public class TelegramBotService
                                 repliedToAuthor = "Original Poster"; // Fallback if author is not available
                             }
 
-                            fullMessageToLLM = $"{author} (replying to {repliedToAuthor}): {message}\n\n--- Original Message by {repliedToAuthor}: ---\n{repliedToMessageText}";
+                            fullMessageToLlm = $"{author} (replying to {repliedToAuthor}): {message}\n\n--- Original Message by {repliedToAuthor}: ---\n{repliedToMessageText}";
                             originalMessageLogInfo = $" | Original by {repliedToAuthor}: \"{repliedToMessageText.Cut(50)}\""; // Cut for brevity in logs
                         }
                         else
                         {
-                            fullMessageToLLM = $"{author}: {message}"; // ReplyToMessage exists but has no text/caption
+                            fullMessageToLlm = $"{author}: {message}"; // ReplyToMessage exists but has no text/caption
                         }
                     }
                     else
                     {
-                        fullMessageToLLM = $"{author}: {message}"; // Not a reply
+                        fullMessageToLlm = $"{author}: {message}"; // Not a reply
                     }
 
                     _logger.LogInformation("Processing prompt from {Author} (lang={LanguageCode}): \"{UserMessage}\"{OriginalMessageLog}",
                         author, languageCode, message, originalMessageLogInfo); // Log user's message and info about replied message
+
+                    byte[]? imageBytes;
+                    string? imageMimeType;
+
+                    // Try to get image from current message
+                    (imageBytes, imageMimeType) = await DownloadImageIfPresentAsync(
+                        update.Message.Photo, botClient, cancellationToken, $"current message from {author}");
+
+                    // If not found in current message, try replied message
+                    if (imageBytes == null && update.Message.ReplyToMessage != null)
+                    {
+                        (imageBytes, imageMimeType) = await DownloadImageIfPresentAsync(
+                            update.Message.ReplyToMessage.Photo, botClient, cancellationToken, $"replied-to message for {author}");
+                    }
 
                     var replyText = string.Empty;
 
@@ -318,8 +326,15 @@ public class TelegramBotService
                         {
                             _ when languageCode is not "rus" and not "eng" => "хуйню спизданул",
                             _ when _wordFilter.ContainsBannedWords(message) => "ты пидор, кстати",
-                            // Pass the potentially combined message to the chat service
-                            _ => await _chatService.GetResponseAsync(update.Message.Chat.Id, fullMessageToLLM),
+                            // Pass the potentially combined message and image (if any) to the chat service
+                            _ => (await _chatService.GetResponseAsync(
+                                    update.Message.Chat.Id,
+                                    update.Message.Id,
+                                    author,
+                                    fullMessageToLlm,
+                                    imageBytes,
+                                    imageMimeType ?? "image/jpeg"
+                                 )).Text,
                         };
                         replyText = replyText.Cut(Const.MaxTelegramMessageLength);
                     }
@@ -345,6 +360,50 @@ public class TelegramBotService
         {
             _logger.LogError(e, "Error while handling update");
         }
+    }
+
+    private async Task<(byte[]? ImageBytes, string? MimeType)> DownloadImageIfPresentAsync(
+        PhotoSize[]? photos,
+        ITelegramBotClient botClient,
+        CancellationToken cancellationToken,
+        string logContextDetails)
+    {
+        if (photos != null && photos.Length > 0)
+        {
+            _logger.LogInformation("Attempting to download image from {LogContextDetails} for mention", logContextDetails);
+            var photoSize = photos.Last(); // Get the largest available photo
+            var fileInfo = await botClient.GetFile(photoSize.FileId, cancellationToken);
+
+            if (string.IsNullOrEmpty(fileInfo.FilePath))
+            {
+                _logger.LogWarning("File path is null or empty for photo in {LogContextDetails}. Cannot download", logContextDetails);
+                return (null, null);
+            }
+
+            try
+            {
+                await using var memoryStream = new MemoryStream();
+                await botClient.DownloadFile(fileInfo.FilePath, memoryStream, cancellationToken);
+                var downloadedImageBytes = memoryStream.ToArray();
+                var mimeType = fileInfo.FilePath.Split('.').LastOrDefault()?.ToLowerInvariant() switch
+                {
+                    "png" => "image/png",
+                    "webp" => "image/webp",
+                    "jpg" => "image/jpeg",
+                    "jpeg" => "image/jpeg",
+                    _ => "image/jpeg" // Default MIME type
+                };
+                _logger.LogInformation("Successfully downloaded image from {LogContextDetails} for mention. Size: {Size} bytes, MIME: {MimeType}",
+                    logContextDetails, downloadedImageBytes.Length, mimeType);
+                return (downloadedImageBytes, mimeType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error downloading image from {LogContextDetails} for mention. FilePath: {FilePath}", logContextDetails, fileInfo.FilePath);
+                return (null, null);
+            }
+        }
+        return (null, null);
     }
 
     private Task HandlePollingErrorAsync(ITelegramBotClient botClient,
