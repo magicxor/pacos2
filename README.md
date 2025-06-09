@@ -19,7 +19,7 @@ Pacos is a .NET-based Telegram bot designed to interact in group chats. It lever
 
 - **Framework**: .NET (Worker Service)
 - **Telegram API**: `Telegram.Bot` library
-- **Generative AI (Chat)**: `Microsoft.Extensions.AI` with Google's Gemini Pro model (`GoogleAIModels.Gemini25ProPreview0520`)
+- **Generative AI (Chat)**: `Microsoft.Extensions.AI` with Google's Gemini Pro model (`gemini-2.5-pro-preview-06-05`)
 - **Generative AI (Image)**: Direct integration with Google's Generative AI for image model (`gemini-2.0-flash-preview-image-generation`)
 - **Logging**: NLog (configured via `nlog.config`)
 - **Configuration**: Standard .NET configuration (e.g., `appsettings.json`, environment variables)
@@ -32,7 +32,7 @@ The bot requires the following configuration settings, typically provided via en
 - `TelegramBotApiKey`: Your Telegram Bot API token.
 - `GoogleCloudApiKey`: Your Google Cloud API key for accessing generative AI services.
 - `AllowedChatIds`: An array of Telegram chat IDs where the bot is permitted to operate.
-- `AllowedLanguageCodes`: An array of language codes (e.g., "en", "ru") that the bot primarily interacts with.
+- `AllowedLanguageCodes`: An array of ISO 639-3 language codes (e.g., "eng", "rus") that the bot primarily interacts with.
 
 ## Key Components
 
@@ -58,7 +58,7 @@ The bot requires the following configuration settings, typically provided via en
 
 ## Bot Commands
 
-- `@<bot_username> <message>` or `pacos <message>`: Engage in a conversation with the bot.
+- `pacos, <message>`: Engage in a conversation with the bot.
 - `!drawx <prompt>`: Generate an image based on the provided text prompt.
 - `!drawx <prompt>` (replying to an image or with an image): Modify the existing image based on the prompt.
 - `!resetx`: Clear the bot's chat history for the current chat.
