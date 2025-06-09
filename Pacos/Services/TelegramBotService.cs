@@ -235,7 +235,7 @@ public class TelegramBotService
             // The switch for language/banned words still operates on the user's current message (`message`)
             replyText = messageText switch
             {
-                _ when languageCode is not "rus" and not "eng" => "хуйню спизданул",
+                _ when _options.Value.AllowedLanguageCodes.All(lc => lc != languageCode) => "хуйню спизданул",
                 _ when _wordFilter.ContainsBannedWords(messageText) => "ты пидор, кстати",
                 _ => (await _chatService.GetResponseAsync(
                         updateMessage.Chat.Id,

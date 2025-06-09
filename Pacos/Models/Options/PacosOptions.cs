@@ -14,4 +14,8 @@ public class PacosOptions
     [Required]
     [MinLength(1)]
     public required long[] AllowedChatIds { get; set; }
+
+    [Required]
+    [MinLength(1)]
+    public required string[] AllowedLanguageCodes { get; set; }
 }
