@@ -28,6 +28,7 @@ public class ChatService
         string? inputImageMimeType = null)
     {
         await _semaphoreSlim.WaitAsync();
+
         try
         {
             var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [new ChatMessage(ChatRole.System, Const.SystemPrompt)]);
@@ -77,6 +78,7 @@ public class ChatService
     public async Task ResetChatHistoryAsync(long chatId)
     {
         await _semaphoreSlim.WaitAsync();
+
         try
         {
             if (_chatHistories.TryRemove(chatId, out _))
