@@ -12,6 +12,8 @@ public class Worker : BackgroundService
         _serviceScopeFactory = serviceScopeFactory;
     }
 
+    private static readonly TimeSpan DelayTime = TimeSpan.FromSeconds(1);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var serviceScope = _serviceScopeFactory.CreateScope();
@@ -21,7 +23,7 @@ public class Worker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(1000, stoppingToken);
+            await Task.Delay(DelayTime, stoppingToken);
         }
     }
 }

@@ -17,8 +17,12 @@ namespace Pacos;
 
 public class Program
 {
-    private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration("nlog.config");
+    private const string NLogConfigFileName = "nlog.config";
+    private const string BanWordsFileName = "banwords.txt";
+    private const string RankedLanguageIdentifierFileName = "Core14.profile.xml";
     private const int BackgroundTaskQueueCapacity = 100;
+
+    private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration(NLogConfigFileName);
 
     public static void Main(string[] args)
     {
@@ -46,15 +50,15 @@ public class Program
                     .ValidateOnStart();
 
                 services.AddHttpClient(nameof(HttpClientType.Telegram))
-                    .AddPolicyHandler(HttpPolicyProvider.TelegramCombinedPolicy)
-                    .AddDefaultLogger();
+                    .AddDefaultLogger()
+                    .AddStandardResilienceHandler();
 
                 var telegramBotApiKey = hostContext.Configuration.GetTelegramBotApiKey()
                                         ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.TelegramBotApiKeyMissing);
                 var googleCloudApiKey = hostContext.Configuration.GetGoogleCloudApiKey()
                                         ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.GoogleCloudApiKeyMissing);
 
-                var bannedWords = File.Exists("banwords.txt") ? File.ReadAllLines("banwords.txt") : [];
+                var bannedWords = File.Exists(BanWordsFileName) ? File.ReadAllLines(BanWordsFileName) : [];
 
                 services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
@@ -64,7 +68,7 @@ public class Program
                 services.AddHostedService<QueuedHostedService>();
                 services.AddSingleton<IChatClient>(_ => new GenerativeAI.Microsoft.GenerativeAIChatClient(googleCloudApiKey, GoogleAIModels.Gemini25ProPreview0520));
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
-                services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load("Core14.profile.xml"));
+                services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
                 services.AddSingleton<ChatService>();
                 services.AddSingleton<GenerativeModelService>();

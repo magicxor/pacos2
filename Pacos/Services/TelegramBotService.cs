@@ -101,7 +101,7 @@ public class TelegramBotService
                 _ => "image/jpeg",
             };
 
-            var (generatedImageData, error) = await _generativeModelService.GenerateImageToImageAsync(prompt, imageBytes, mimeType);
+            var (generatedImageData, generatedImageMime, error) = await _generativeModelService.GenerateImageToImageAsync(prompt, imageBytes, mimeType);
             if (generatedImageData != null)
             {
                 await botClient.SendPhoto(
@@ -135,7 +135,7 @@ public class TelegramBotService
                 return;
             }
 
-            var (generatedImageData, error) = await _generativeModelService.GenerateTextToImageAsync(prompt);
+            var (generatedImageData, generatedImageMime, error) = await _generativeModelService.GenerateTextToImageAsync(prompt);
             if (generatedImageData != null)
             {
                 await botClient.SendPhoto(

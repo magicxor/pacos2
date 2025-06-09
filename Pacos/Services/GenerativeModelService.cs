@@ -7,6 +7,8 @@ namespace Pacos.Services;
 
 public class GenerativeModelService
 {
+    private const string ModelName = "gemini-2.0-flash-preview-image-generation";
+
     private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<GenerativeModelService> _logger;
 
@@ -55,7 +57,7 @@ public class GenerativeModelService
         _logger = logger;
     }
 
-    public async Task<(byte[]? imageData, string? errorMessage)> GenerateTextToImageAsync(string prompt)
+    public async Task<(byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
     {
         try
         {
@@ -64,7 +66,7 @@ public class GenerativeModelService
             var fullPrompt = $"Generate an image of: {prompt}";
             var generativeModel = new GenerativeModel(
                 apiKey: _options.Value.GoogleCloudApiKey,
-                model: "gemini-2.0-flash-preview-image-generation",
+                model: ModelName,
                 new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
                 GetImgSafetySettings());
             var response = await generativeModel.GenerateContentAsync(fullPrompt);
@@ -79,23 +81,23 @@ public class GenerativeModelService
                     if (imagePart != null)
                     {
                         _logger.LogInformation("Successfully generated image from text prompt: {Prompt}", prompt);
-                        return (Convert.FromBase64String(imagePart.InlineData?.Data ?? string.Empty), null);
+                        return (Convert.FromBase64String(imagePart.InlineData?.Data ?? string.Empty), imagePart.InlineData?.MimeType, null);
                     }
 
                     _logger.LogWarning("No image part found in response for text prompt: {Prompt}. Response text: {Text}", prompt, response.Text);
                 }
             }
 
-            return (null, "Could not extract image from the response. The model might not have generated one.");
+            return (null, null, "Could not extract image from the response. The model might not have generated one.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during text-to-image generation for prompt: {Prompt}", prompt);
-            return (null, $"An error occurred while generating the image: {ex.Message}");
+            return (null, null, $"An error occurred while generating the image: {ex.Message}");
         }
     }
 
-    public async Task<(byte[]? imageData, string? errorMessage)> GenerateImageToImageAsync(string prompt, byte[] inputImageBytes, string mimeType = "image/jpeg")
+    public async Task<(byte[]? imageData, string? mimeType, string? errorMessage)> GenerateImageToImageAsync(string prompt, byte[] inputImageBytes, string mimeType)
     {
         try
         {
@@ -115,7 +117,7 @@ public class GenerativeModelService
 
             var generativeModel = new GenerativeModel(
                 apiKey: _options.Value.GoogleCloudApiKey,
-                model: "gemini-2.0-flash-preview-image-generation",
+                model: ModelName,
                 new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
                 GetImgSafetySettings());
             var response = await generativeModel.GenerateContentAsync(contentParts.ToArray());
@@ -129,19 +131,19 @@ public class GenerativeModelService
                     if (outputImagePart != null)
                     {
                         _logger.LogInformation("Successfully generated image from image input with prompt: {Prompt}", prompt);
-                        return (Convert.FromBase64String(outputImagePart.InlineData?.Data ?? string.Empty), null);
+                        return (Convert.FromBase64String(outputImagePart.InlineData?.Data ?? string.Empty), outputImagePart.InlineData?.MimeType, null);
                     }
 
                     _logger.LogWarning("No output image part found in image-to-image response for prompt: {Prompt}. Response text: {Text}", prompt, response.Text);
                 }
             }
 
-            return (null, "Could not extract modified image from the response. The model might not have generated one.");
+            return (null, null, "Could not extract modified image from the response. The model might not have generated one.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during image-to-image generation for prompt: {Prompt}", prompt);
-            return (null, $"An error occurred while processing the image: {ex.Message}");
+            return (null, null, $"An error occurred while processing the image: {ex.Message}");
         }
     }
 }

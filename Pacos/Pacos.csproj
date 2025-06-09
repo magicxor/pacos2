@@ -16,6 +16,7 @@
         <PackageReference Include="Microsoft.Extensions.AI.Evaluation" />
         <PackageReference Include="Microsoft.Extensions.Hosting" />
         <PackageReference Include="Microsoft.Extensions.Http.Polly" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
         <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
         <PackageReference Include="Newtonsoft.Json" />
