@@ -1,10 +1,11 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using Microsoft.Extensions.AI;
 using Pacos.Constants;
 
 namespace Pacos.Services;
 
-public class ChatService
+public sealed class ChatService : IDisposable
 {
     private readonly ILogger<ChatService> _logger;
     private readonly IChatClient _chatClient;
@@ -48,7 +49,7 @@ public class ChatService
 
             var userMessage = new ChatMessage
             {
-                MessageId  = messageId.ToString(),
+                MessageId  = messageId.ToString(CultureInfo.InvariantCulture),
                 AuthorName = authorName,
                 Contents = inputContents,
                 Role = ChatRole.User,
@@ -94,5 +95,11 @@ public class ChatService
         {
             _semaphoreSlim.Release();
         }
+    }
+
+    public void Dispose()
+    {
+        _chatClient.Dispose();
+        _semaphoreSlim.Dispose();
     }
 }

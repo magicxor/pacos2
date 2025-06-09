@@ -278,13 +278,13 @@ public class TelegramBotService
             {
                 var author = update.Message.From.Username ?? string.Join(' ', update.Message.From.FirstName, update.Message.From.LastName).Trim();
                 var message = (update.Message.Text ?? update.Message.Caption ?? string.Empty).Trim();
-                var currentMention = Const.Mentions.FirstOrDefault(mention => message.StartsWith(mention, StringComparison.InvariantCultureIgnoreCase));
+                var currentMention = Const.Mentions.FirstOrDefault(mention => message.StartsWith(mention, StringComparison.OrdinalIgnoreCase));
 
-                if (message.StartsWith(Const.DrawCommand, StringComparison.InvariantCultureIgnoreCase))
+                if (message.StartsWith(Const.DrawCommand, StringComparison.OrdinalIgnoreCase))
                 {
                     await HandleDrawAsync(botClient, update.Message, message, author, cancellationToken);
                 }
-                else if (message.Equals(Const.ResetCommand, StringComparison.InvariantCultureIgnoreCase))
+                else if (message.Equals(Const.ResetCommand, StringComparison.OrdinalIgnoreCase))
                 {
                     await HandleResetAsync(botClient, update.Message, message, author, cancellationToken);
                 }

@@ -10,17 +10,6 @@ public class GenerativeModelService
     private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<GenerativeModelService> _logger;
 
-    private static List<SafetySetting> GetSafetySettings()
-    {
-        return Enum.GetValues<HarmCategory>()
-            .Select(x => new SafetySetting
-            {
-                Category = x,
-                Threshold = HarmBlockThreshold.OFF,
-            })
-            .ToList();
-    }
-
     private static List<SafetySetting> GetImgSafetySettings()
     {
         return
@@ -86,7 +75,7 @@ public class GenerativeModelService
                 if (candidate.Content is { Parts.Count: > 0 })
                 {
                     // Look for an image part in the response
-                    var imagePart = candidate.Content.Parts.FirstOrDefault(p => p.InlineData != null && (p.InlineData.MimeType?.StartsWith("image/") == true));
+                    var imagePart = candidate.Content.Parts.FirstOrDefault(p => p.InlineData != null && (p.InlineData.MimeType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true));
                     if (imagePart != null)
                     {
                         _logger.LogInformation("Successfully generated image from text prompt: {Prompt}", prompt);
@@ -136,7 +125,7 @@ public class GenerativeModelService
                 var candidate = response.Candidates.First();
                 if (candidate.Content is { Parts.Count: > 0 })
                 {
-                    var outputImagePart = candidate.Content.Parts.FirstOrDefault(p => p.InlineData != null && (p.InlineData.MimeType?.StartsWith("image/") == true));
+                    var outputImagePart = candidate.Content.Parts.FirstOrDefault(p => p.InlineData != null && (p.InlineData.MimeType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true));
                     if (outputImagePart != null)
                     {
                         _logger.LogInformation("Successfully generated image from image input with prompt: {Prompt}", prompt);
@@ -149,7 +138,7 @@ public class GenerativeModelService
 
             return (null, "Could not extract modified image from the response. The model might not have generated one.");
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error during image-to-image generation for prompt: {Prompt}", prompt);
             return (null, $"An error occurred while processing the image: {ex.Message}");

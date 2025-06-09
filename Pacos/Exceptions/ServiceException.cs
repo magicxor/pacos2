@@ -2,7 +2,7 @@ namespace Pacos.Exceptions;
 
 public class ServiceException : Exception
 {
-    public readonly IReadOnlyDictionary<string, string>? Details;
+    public IReadOnlyDictionary<string, string>? Details { get; }
 
     public ServiceException(string message, IReadOnlyDictionary<string, string>? details = null) : base(message)
     {
