@@ -66,7 +66,7 @@ public class Program
                         s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
                     ));
                 services.AddHostedService<QueuedHostedService>();
-                services.AddSingleton<IChatClient>(_ => new GenerativeAI.Microsoft.GenerativeAIChatClient(googleCloudApiKey, GoogleAIModels.Gemini25ProPreview0520));
+                services.AddSingleton<IChatClient>(_ => new GenerativeAI.Microsoft.GenerativeAIChatClient(googleCloudApiKey, "gemini-2.5-pro-preview-06-05"));
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
