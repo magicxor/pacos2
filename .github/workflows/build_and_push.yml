@@ -9,6 +9,10 @@ on:
         type: string
         description: environment to build and push to
         required: true
+      tag:
+        type: string
+        description: tag for the docker image
+        required: true
 
 name: Build and push (reusable workflow)
 
@@ -50,7 +54,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
+            ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}
           platforms: |
             linux/amd64
             linux/arm64/v8
