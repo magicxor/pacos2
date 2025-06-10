@@ -1,5 +1,6 @@
 using GenerativeAI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Config;
 using NLog.Extensions.Logging;
@@ -66,7 +67,10 @@ public class Program
                         s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
                     ));
                 services.AddHostedService<QueuedHostedService>();
-                services.AddSingleton<IChatClient>(_ => new GenerativeAI.Microsoft.GenerativeAIChatClient(googleCloudApiKey, "gemini-2.5-pro-preview-06-05"));
+                services.AddSingleton<IChatClient>(s =>
+                    new GenerativeAI.Microsoft.GenerativeAIChatClient(
+                        googleCloudApiKey,
+                        s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel));
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));

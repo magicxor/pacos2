@@ -7,8 +7,6 @@ namespace Pacos.Services;
 
 public class GenerativeModelService
 {
-    private const string ModelName = "gemini-2.0-flash-preview-image-generation";
-
     private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<GenerativeModelService> _logger;
 
@@ -66,7 +64,7 @@ public class GenerativeModelService
             var fullPrompt = $"Generate an image of: {prompt}";
             var generativeModel = new GenerativeModel(
                 apiKey: _options.Value.GoogleCloudApiKey,
-                model: ModelName,
+                model: _options.Value.ImageGenerationModel,
                 new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
                 GetImgSafetySettings());
             var response = await generativeModel.GenerateContentAsync(fullPrompt);
@@ -117,7 +115,7 @@ public class GenerativeModelService
 
             var generativeModel = new GenerativeModel(
                 apiKey: _options.Value.GoogleCloudApiKey,
-                model: ModelName,
+                model: _options.Value.ImageGenerationModel,
                 new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
                 GetImgSafetySettings());
             var response = await generativeModel.GenerateContentAsync(contentParts.ToArray());

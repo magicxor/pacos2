@@ -18,4 +18,12 @@ public class PacosOptions
     [Required]
     [MinLength(1)]
     public required string[] AllowedLanguageCodes { get; set; }
+
+    [Required]
+    [MinLength(1)]
+    public required string ChatModel { get; set; }
+
+    [Required]
+    [MinLength(1)]
+    public required string ImageGenerationModel { get; set; }
 }

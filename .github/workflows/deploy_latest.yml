@@ -40,4 +40,6 @@ jobs:
               -e Pacos__AllowedChatIds__3='${{ vars.PACOS__ALLOWEDCHATIDS__3 }}' \
               -e Pacos__AllowedLanguageCodes__0='${{ vars.PACOS__ALLOWEDLANGUAGECODES__0 }}' \
               -e Pacos__AllowedLanguageCodes__1='${{ vars.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
+              -e Pacos__ChatModel='${{ vars.PACOS__CHATMODEL }}' \
+              -e Pacos__ImageGenerationModel='${{ vars.PACOS__IMAGEGENERATIONMODEL }}' \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
