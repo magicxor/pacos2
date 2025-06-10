@@ -314,6 +314,7 @@ public class TelegramBotService
             { Voice: { } voice } => (voice.FileId, voice.MimeType ?? "audio/ogg"),
             { Animation: { } animation } => (animation.FileId, animation.MimeType ?? "video/mp4"),
             { Sticker: { } sticker } => (sticker.FileId, sticker.Type == StickerType.Regular ? "image/webp" : "application/octet-stream"),
+            { Document: { } document } when !string.IsNullOrEmpty(document.MimeType) => (document.FileId, document.MimeType),
             _ => null,
         };
     }
