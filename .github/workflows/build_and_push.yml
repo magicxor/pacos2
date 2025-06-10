@@ -38,6 +38,7 @@ jobs:
       - name: Copy config
         run: |
           printf "%s" "${{ vars.BANWORDS }}" > ./${{ env.MAIN_PROJECT_DIR }}/banwords.txt
+          printf "%s" "${{ secrets.MCP }}" > ./${{ env.MAIN_PROJECT_DIR }}/mcp.json
 
       # https://github.com/docker/build-push-action
       - name: Build and push

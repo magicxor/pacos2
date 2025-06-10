@@ -252,7 +252,7 @@ public sealed class TelegramBotService
             replyText = replyText.Cut(Const.MaxTelegramMessageLength);
             if (string.IsNullOrWhiteSpace(replyText))
             {
-                replyText = "пришёл пустой ответ... подумай над своим поведением";
+                replyText = "игнорирую 😏";
             }
         }
         catch (Exception e)
