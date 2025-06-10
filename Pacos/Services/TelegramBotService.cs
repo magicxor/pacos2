@@ -226,6 +226,9 @@ public class TelegramBotService
             author, languageCode, messageText, originalMessageLogInfo); // Log user's message and info about replied message
 
         var mediaInfo = GetFileInfo(updateMessage) ?? GetFileInfo(updateMessage.ReplyToMessage);
+        _logger.LogInformation("Media info for message from {Author}: FileId={FileId}, MimeType={MimeType}",
+            author, mediaInfo?.FileId, mediaInfo?.MimeType);
+
         var mediaBytes = await DownloadMediaIfPresentAsync(mediaInfo?.FileId, botClient, cancellationToken);
 
         var replyText = string.Empty;
