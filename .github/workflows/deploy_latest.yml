@@ -29,9 +29,9 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             docker pull ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
-            docker stop ${DOCKER_CONTAINER_NAME} || true
-            docker rm ${DOCKER_CONTAINER_NAME} || true
-            docker run -i -t -d --restart=always --name=${DOCKER_CONTAINER_NAME} \
+            docker stop ${{ env.DOCKER_CONTAINER_NAME }} || true
+            docker rm ${{ env.DOCKER_CONTAINER_NAME }} || true
+            docker run -i -t -d --restart=always --name=${{ env.DOCKER_CONTAINER_NAME }} \
               -e Pacos__TelegramBotApiKey='${{ secrets.PACOS__TELEGRAMBOTAPIKEY }}' \
               -e Pacos__GoogleCloudApiKey='${{ secrets.PACOS__GOOGLECLOUDAPIKEY }}' \
               -e Pacos__AllowedChatIds__0='${{ secrets.PACOS__ALLOWEDCHATIDS__0 }}' \

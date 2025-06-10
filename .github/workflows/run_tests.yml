@@ -50,7 +50,7 @@ jobs:
 
     - name: Copy config
       run: |
-        printf "%s" "${{ vars.BANWORDS }}" > ./${MAIN_PROJECT_DIR}/banwords.txt
+        printf "%s" "${{ vars.BANWORDS }}" > ./${{ env.MAIN_PROJECT_DIR }}/banwords.txt
 
     - name: Run tests
       run: |
