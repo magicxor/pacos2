@@ -2,31 +2,6 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/runtime:9.0-noble AS base
-RUN apt-get update \
-    && apt-get install -y \
-        software-properties-common \
-        libc6-dev \
-        libx11-dev \
-        libicu-dev \
-        libharfbuzz0b \
-        libfreetype6 \
-        libgdiplus \
-        libfontconfig1 \
-        fontconfig \
-        libpango-1.0-0 \
-        libpangocairo-1.0 \
-        libpthread-stubs0-dev \
-        python3 \
-        python3-pip \
-        python-is-python3 \
-        curl \
-        wget \
-    && curl -sL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y nodejs \
-    && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && apt-get clean \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 WORKDIR /app
 

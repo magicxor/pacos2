@@ -58,28 +58,22 @@ public class Program
                     ? File.ReadAllLines(BanWordsFileName)
                     : [];
 
-                var mcpConfig = File.Exists(McpConfigFileName)
-                    ? File.ReadAllText(McpConfigFileName)
-                    : string.Empty;
-
                 services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
                         s.GetRequiredService<IOptions<PacosOptions>>().Value.TelegramBotApiKey,
                         s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
                     ));
                 services.AddHostedService<QueuedHostedService>();
-                services.AddSingleton<McpProvider>(s => new McpProvider(
-                    s.GetRequiredService<ILogger<McpProvider>>(),
-                    mcpConfig));
                 services.AddSingleton<IChatClient>(s =>
                 {
                     var loggerFactory = s.GetRequiredService<ILoggerFactory>();
                     var chatClientObj = new GenerativeAIChatClient(
                             s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
                             s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
-                            autoCallFunction: false);
-                    /* disable google built-in functions */
-                    chatClientObj.model.DisableFunctions();
+                            autoCallFunction: true);
+
+                    chatClientObj.model.EnableFunctions();
+                    chatClientObj.model.UseGoogleSearch = true;
 
                     var chatClient = chatClientObj
                         .AsBuilder()

@@ -9,18 +9,15 @@ public sealed class ChatService : IDisposable
 {
     private readonly ILogger<ChatService> _logger;
     private readonly IChatClient _chatClient;
-    private readonly McpProvider _mcpProvider;
     private readonly ConcurrentDictionary<long, List<ChatMessage>> _chatHistories = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(initialCount: 1, maxCount: 1);
 
     public ChatService(
         ILogger<ChatService> logger,
-        IChatClient chatClient,
-        McpProvider mcpProvider)
+        IChatClient chatClient)
     {
         _logger = logger;
         _chatClient = chatClient;
-        _mcpProvider = mcpProvider;
     }
 
     private ChatMessage GetSystemPrompt()
@@ -63,16 +60,7 @@ public sealed class ChatService : IDisposable
                 Role = ChatRole.User,
             };
 
-            var mcpTools = await _mcpProvider.GetMcpToolsAsync();
-
-            var responseObject = await _chatClient.GetResponseAsync(
-                chatHistory.Concat([userMessage]),
-                new ChatOptions
-                {
-                    ToolMode = ChatToolMode.Auto,
-                    Tools = mcpTools,
-                    AllowMultipleToolCalls = true,
-                });
+            var responseObject = await _chatClient.GetResponseAsync(chatHistory.Concat([userMessage]));
 
             chatHistory.Add(new ChatMessage(ChatRole.User, messageText));
 

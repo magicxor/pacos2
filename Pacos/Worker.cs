@@ -18,9 +18,6 @@ public class Worker : BackgroundService
     {
         using var serviceScope = _serviceScopeFactory.CreateScope();
 
-        var mcpProvider = serviceScope.ServiceProvider.GetRequiredService<McpProvider>();
-        _ = await mcpProvider.GetMcpToolsAsync();
-
         _telegramBotService = serviceScope.ServiceProvider.GetRequiredService<TelegramBotService>();
         _telegramBotService.Start(stoppingToken);
 
