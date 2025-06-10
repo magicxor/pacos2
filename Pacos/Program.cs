@@ -1,4 +1,3 @@
-using GenerativeAI;
 using GenerativeAI.Microsoft;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
@@ -20,7 +19,6 @@ public class Program
     private const string NLogConfigFileName = "nlog.config";
     private const string BanWordsFileName = "banwords.txt";
     private const string RankedLanguageIdentifierFileName = "Core14.profile.xml";
-    private const string McpConfigFileName = "mcp.json";
     private const int BackgroundTaskQueueCapacity = 100;
 
     private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration(NLogConfigFileName);

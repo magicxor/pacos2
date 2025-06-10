@@ -54,7 +54,6 @@ jobs:
         BANWORDS_CONTENT: ${{ vars.BANWORDS }}
       run: |
         printf "%s" "$BANWORDS_CONTENT" > ./${{ env.MAIN_PROJECT_DIR }}/banwords.txt
-        printf "%s" "$MCP_JSON_CONTENT" > ./${{ env.MAIN_PROJECT_DIR }}/mcp.json
 
     - name: Run tests
       run: |
