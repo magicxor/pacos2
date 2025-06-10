@@ -2,17 +2,7 @@
 
 namespace Pacos.Services.BackgroundTasks;
 
-public interface IBackgroundTaskQueue
-{
-    ValueTask QueueBackgroundWorkItemAsync(Func<CancellationToken, ValueTask> workItem);
-
-    ValueTask<Func<CancellationToken, ValueTask>> DequeueAsync(
-        CancellationToken cancellationToken);
-
-    int ItemCount { get; }
-}
-
-public class BackgroundTaskQueue : IBackgroundTaskQueue
+public sealed class BackgroundTaskQueue : IBackgroundTaskQueue
 {
     private readonly Channel<Func<CancellationToken, ValueTask>> _queue;
 

@@ -12,7 +12,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Pacos.Services;
 
-public class TelegramBotService
+public sealed class TelegramBotService
 {
     private readonly ILogger<TelegramBotService> _logger;
     private readonly IOptions<PacosOptions> _options;

@@ -1,6 +1,6 @@
 ﻿namespace Pacos.Services;
 
-public class WordFilter
+public sealed class WordFilter
 {
     private readonly string[] _bannedWords;
 

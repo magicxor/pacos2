@@ -5,7 +5,7 @@ using GenerativeAI.Types;
 
 namespace Pacos.Services;
 
-public class GenerativeModelService
+public sealed class GenerativeModelService
 {
     private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<GenerativeModelService> _logger;

@@ -1,6 +1,6 @@
 namespace Pacos.Exceptions;
 
-public class ServiceException : Exception
+public sealed class ServiceException : Exception
 {
     public IReadOnlyDictionary<string, string>? Details { get; }
 

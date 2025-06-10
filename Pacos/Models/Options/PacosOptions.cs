@@ -2,7 +2,7 @@
 
 namespace Pacos.Models.Options;
 
-public class PacosOptions
+public sealed class PacosOptions
 {
     [Required]
     [RegularExpression(@".*:.*")]

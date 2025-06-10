@@ -1,6 +1,6 @@
 ﻿namespace Pacos.Services.BackgroundTasks;
 
-public class QueuedHostedService : BackgroundService
+public sealed class QueuedHostedService : BackgroundService
 {
     private readonly ILogger<QueuedHostedService> _logger;
 

@@ -1,4 +1,3 @@
-using GenerativeAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -6,8 +5,6 @@ using NLog.Config;
 using NLog.Extensions.Logging;
 using NTextCat;
 using Pacos.Enums;
-using Pacos.Exceptions;
-using Pacos.Extensions;
 using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
@@ -54,22 +51,17 @@ public class Program
                     .AddDefaultLogger()
                     .AddStandardResilienceHandler();
 
-                var telegramBotApiKey = hostContext.Configuration.GetTelegramBotApiKey()
-                                        ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.TelegramBotApiKeyMissing);
-                var googleCloudApiKey = hostContext.Configuration.GetGoogleCloudApiKey()
-                                        ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.GoogleCloudApiKeyMissing);
-
                 var bannedWords = File.Exists(BanWordsFileName) ? File.ReadAllLines(BanWordsFileName) : [];
 
                 services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
-                        telegramBotApiKey,
+                        s.GetRequiredService<IOptions<PacosOptions>>().Value.TelegramBotApiKey,
                         s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
                     ));
                 services.AddHostedService<QueuedHostedService>();
                 services.AddSingleton<IChatClient>(s =>
                     new GenerativeAI.Microsoft.GenerativeAIChatClient(
-                        googleCloudApiKey,
+                        s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
                         s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel));
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
