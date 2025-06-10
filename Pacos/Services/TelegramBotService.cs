@@ -253,7 +253,7 @@ public class TelegramBotService
         }
         catch (Exception e)
         {
-            replyText = e.ToString();
+            replyText = $"{e.GetType().Name}: {e.Message}";
         }
 
         _logger.LogInformation("Replying to {Author} with: {ReplyText}", author, replyText);
