@@ -250,6 +250,10 @@ public class TelegramBotService
                      )).Text,
             };
             replyText = replyText.Cut(Const.MaxTelegramMessageLength);
+            if (string.IsNullOrWhiteSpace(replyText))
+            {
+                replyText = "пришёл пустой ответ... подумай над своим поведением";
+            }
         }
         catch (Exception e)
         {
