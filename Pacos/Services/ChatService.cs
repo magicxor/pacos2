@@ -9,20 +9,25 @@ public sealed class ChatService : IDisposable
 {
     private readonly ILogger<ChatService> _logger;
     private readonly IChatClient _chatClient;
+    private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<long, List<ChatMessage>> _chatHistories = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(initialCount: 1, maxCount: 1);
 
     public ChatService(
         ILogger<ChatService> logger,
-        IChatClient chatClient)
+        IChatClient chatClient,
+        TimeProvider timeProvider)
     {
         _logger = logger;
         _chatClient = chatClient;
+        _timeProvider = timeProvider;
     }
 
     private ChatMessage GetSystemPrompt()
     {
-        return new ChatMessage(ChatRole.System, Const.SystemPrompt);
+        return new ChatMessage(
+            ChatRole.System,
+            Const.SystemPrompt + Environment.NewLine + Environment.NewLine + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}");
     }
 
     public async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetResponseAsync(
