@@ -10,6 +10,8 @@ jobs:
     name: Run tests
     uses: ./.github/workflows/run_tests.yml
     secrets: inherit
+    with:
+      environment: production
 
   build_and_push:
     name: Build and push
