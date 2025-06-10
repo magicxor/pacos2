@@ -1,5 +1,6 @@
 **/.classpath
 **/.dockerignore
+**/.gitattributes
 **/.env
 **/.git
 **/.gitignore
@@ -8,6 +9,11 @@
 **/.toolstarget
 **/.vs
 **/.vscode
+**/.idea
+**/.github
+**/.sonarqube
+**/.windsurf
+**/.DS_Store
 **/*.*proj.user
 **/*.dbmdl
 **/*.jfm
