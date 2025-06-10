@@ -17,6 +17,7 @@ jobs:
   run_tests:
     name: run tests
     runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
     strategy:
       matrix:
         dotnet: [

@@ -16,6 +16,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     env:
       DOCKER_CONTAINER_NAME: pacos2-production
     steps:
