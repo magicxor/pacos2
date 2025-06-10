@@ -330,5 +330,5 @@ roslynator_null_conditional_operator_new_line = before
 [*.{env,yml,yaml,js,json,css,scss}]
 charset = utf-8
 
-[*.{json,xml,html,csproj,sln,slnx,config,yml,yaml}]
+[*.{json,xml,html,csproj,sln,slnx,config,yml,yaml,props}]
 indent_size = 2

@@ -1,0 +1,11 @@
+name: pull request - run tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  run_tests:
+    name: Run tests
+    uses: ./.github/workflows/run_tests.yml
+    secrets: inherit

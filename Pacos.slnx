@@ -6,5 +6,6 @@
     <File Path="README.md" />
     <File Path="Directory.Build.props" />
   </Folder>
+  <Project Path="Pacos.Tests.Unit/Pacos.Tests.Unit.csproj" />
   <Project Path="Pacos/Pacos.csproj" />
 </Solution>

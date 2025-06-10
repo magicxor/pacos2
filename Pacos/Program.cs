@@ -79,11 +79,16 @@ public class Program
 
             host.Run();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // NLog: catch setup errors
             LogManager.GetCurrentClassLogger().Error(ex, "Stopped program because of exception");
             throw;
+        }
+        catch (OperationCanceledException)
+        {
+            // This is expected when the application is shutting down gracefully
+            LogManager.GetCurrentClassLogger().Info("Application shut down gracefully.");
         }
         finally
         {
