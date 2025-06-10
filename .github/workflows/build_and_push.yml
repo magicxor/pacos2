@@ -17,6 +17,8 @@ jobs:
     name: Build and push
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    env:
+      MAIN_PROJECT_DIR: Pacos
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +45,7 @@ jobs:
         with:
           push: true
           context: .
+          file: ./${MAIN_PROJECT_DIR}/Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
