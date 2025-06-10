@@ -9,15 +9,23 @@ public sealed class ChatService : IDisposable
 {
     private readonly ILogger<ChatService> _logger;
     private readonly IChatClient _chatClient;
+    private readonly McpProvider _mcpProvider;
     private readonly ConcurrentDictionary<long, List<ChatMessage>> _chatHistories = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(initialCount: 1, maxCount: 1);
 
     public ChatService(
         ILogger<ChatService> logger,
-        IChatClient chatClient)
+        IChatClient chatClient,
+        McpProvider mcpProvider)
     {
         _logger = logger;
         _chatClient = chatClient;
+        _mcpProvider = mcpProvider;
+    }
+
+    private ChatMessage GetSystemPrompt()
+    {
+        return new ChatMessage(ChatRole.System, Const.SystemPrompt);
     }
 
     public async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetResponseAsync(
@@ -25,26 +33,26 @@ public sealed class ChatService : IDisposable
         long messageId,
         string authorName,
         string messageText,
-        byte[]? inputImageBytes = null,
-        string? inputImageMimeType = null)
+        byte[]? fileBytes = null,
+        string? fileMimeType = null)
     {
         await _semaphoreSlim.WaitAsync();
 
         try
         {
-            var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [new ChatMessage(ChatRole.System, Const.SystemPrompt)]);
+            var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [GetSystemPrompt()]);
 
             if (chatHistory.Sum(x => x.Text.Length) + messageText.Length is var numberOfCharacters and > Const.MaxAllowedContextLength)
             {
                 _logger.LogWarning("Chat history is too long ({NumberOfCharacters} characters), clearing history", numberOfCharacters);
                 chatHistory.Clear();
-                chatHistory.Add(new ChatMessage(ChatRole.System, Const.SystemPrompt));
+                chatHistory.Add(GetSystemPrompt());
             }
 
             var inputContents = new List<AIContent> { new TextContent(messageText) };
-            if (inputImageBytes is not null && inputImageMimeType is not null)
+            if (fileBytes is not null && fileMimeType is not null)
             {
-                inputContents.Add(new DataContent(inputImageBytes, inputImageMimeType));
+                inputContents.Add(new DataContent(fileBytes, fileMimeType));
             }
 
             var userMessage = new ChatMessage
@@ -55,7 +63,16 @@ public sealed class ChatService : IDisposable
                 Role = ChatRole.User,
             };
 
-            var responseObject = await _chatClient.GetResponseAsync(chatHistory.Concat([userMessage]));
+            var mcpTools = await _mcpProvider.GetMcpToolsAsync();
+
+            var responseObject = await _chatClient.GetResponseAsync(
+                chatHistory.Concat([userMessage]),
+                new ChatOptions
+                {
+                    ToolMode = ChatToolMode.Auto,
+                    Tools = mcpTools,
+                    AllowMultipleToolCalls = true,
+                });
 
             chatHistory.Add(new ChatMessage(ChatRole.User, messageText));
 

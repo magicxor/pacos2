@@ -409,3 +409,5 @@ FodyWeavers.xsd
 .sonarqube/
 Pacos/appsettings.json
 Pacos/banwords.txt
+
+Pacos/mcp.json
