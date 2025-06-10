@@ -1,3 +1,5 @@
+using GenerativeAI;
+using GenerativeAI.Microsoft;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -18,6 +20,7 @@ public class Program
     private const string NLogConfigFileName = "nlog.config";
     private const string BanWordsFileName = "banwords.txt";
     private const string RankedLanguageIdentifierFileName = "Core14.profile.xml";
+    private const string McpConfigFileName = "mcp.json";
     private const int BackgroundTaskQueueCapacity = 100;
 
     private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration(NLogConfigFileName);
@@ -51,7 +54,9 @@ public class Program
                     .AddDefaultLogger()
                     .AddStandardResilienceHandler();
 
-                var bannedWords = File.Exists(BanWordsFileName) ? File.ReadAllLines(BanWordsFileName) : [];
+                var bannedWords = File.Exists(BanWordsFileName)
+                    ? File.ReadAllLines(BanWordsFileName)
+                    : [];
 
                 services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
@@ -60,9 +65,23 @@ public class Program
                     ));
                 services.AddHostedService<QueuedHostedService>();
                 services.AddSingleton<IChatClient>(s =>
-                    new GenerativeAI.Microsoft.GenerativeAIChatClient(
-                        s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
-                        s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel));
+                {
+                    var loggerFactory = s.GetRequiredService<ILoggerFactory>();
+                    var chatClientObj = new GenerativeAIChatClient(
+                            s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
+                            s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
+                            autoCallFunction: true);
+
+                    chatClientObj.model.EnableFunctions();
+                    chatClientObj.model.UseGoogleSearch = true;
+
+                    var chatClient = chatClientObj
+                        .AsBuilder()
+                        .UseFunctionInvocation(loggerFactory, cfg => cfg.AllowConcurrentInvocation = true)
+                        .UseLogging(loggerFactory)
+                        .Build();
+                    return chatClient;
+                });
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));

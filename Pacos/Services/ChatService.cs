@@ -9,15 +9,25 @@ public sealed class ChatService : IDisposable
 {
     private readonly ILogger<ChatService> _logger;
     private readonly IChatClient _chatClient;
+    private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<long, List<ChatMessage>> _chatHistories = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(initialCount: 1, maxCount: 1);
 
     public ChatService(
         ILogger<ChatService> logger,
-        IChatClient chatClient)
+        IChatClient chatClient,
+        TimeProvider timeProvider)
     {
         _logger = logger;
         _chatClient = chatClient;
+        _timeProvider = timeProvider;
+    }
+
+    private ChatMessage GetSystemPrompt()
+    {
+        return new ChatMessage(
+            ChatRole.System,
+            Const.SystemPrompt + Environment.NewLine + Environment.NewLine + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}");
     }
 
     public async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetResponseAsync(
@@ -25,26 +35,26 @@ public sealed class ChatService : IDisposable
         long messageId,
         string authorName,
         string messageText,
-        byte[]? inputImageBytes = null,
-        string? inputImageMimeType = null)
+        byte[]? fileBytes = null,
+        string? fileMimeType = null)
     {
         await _semaphoreSlim.WaitAsync();
 
         try
         {
-            var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [new ChatMessage(ChatRole.System, Const.SystemPrompt)]);
+            var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [GetSystemPrompt()]);
 
             if (chatHistory.Sum(x => x.Text.Length) + messageText.Length is var numberOfCharacters and > Const.MaxAllowedContextLength)
             {
                 _logger.LogWarning("Chat history is too long ({NumberOfCharacters} characters), clearing history", numberOfCharacters);
                 chatHistory.Clear();
-                chatHistory.Add(new ChatMessage(ChatRole.System, Const.SystemPrompt));
+                chatHistory.Add(GetSystemPrompt());
             }
 
             var inputContents = new List<AIContent> { new TextContent(messageText) };
-            if (inputImageBytes is not null && inputImageMimeType is not null)
+            if (fileBytes is not null && fileMimeType is not null)
             {
-                inputContents.Add(new DataContent(inputImageBytes, inputImageMimeType));
+                inputContents.Add(new DataContent(fileBytes, fileMimeType));
             }
 
             var userMessage = new ChatMessage

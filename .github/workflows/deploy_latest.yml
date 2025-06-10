@@ -9,6 +9,14 @@ on:
         type: string
         description: environment to deploy to
         required: true
+      container_name:
+        type: string
+        description: name for the docker container
+        required: true
+      tag:
+        type: string
+        description: tag for the docker image
+        required: true
 
 name: Deploy (reusable workflow)
 
@@ -17,8 +25,6 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    env:
-      DOCKER_CONTAINER_NAME: pacos2-production
     steps:
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@v1.2.0
@@ -28,10 +34,10 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            docker pull ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
-            docker stop ${{ env.DOCKER_CONTAINER_NAME }} || true
-            docker rm ${{ env.DOCKER_CONTAINER_NAME }} || true
-            docker run -i -t -d --restart=always --name=${{ env.DOCKER_CONTAINER_NAME }} \
+            docker pull ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}
+            docker stop ${{ inputs.container_name }} || true
+            docker rm ${{ inputs.container_name }} || true
+            docker run -i -t -d --restart=always --name=${{ inputs.container_name }} \
               -e Pacos__TelegramBotApiKey='${{ secrets.PACOS__TELEGRAMBOTAPIKEY }}' \
               -e Pacos__GoogleCloudApiKey='${{ secrets.PACOS__GOOGLECLOUDAPIKEY }}' \
               -e Pacos__AllowedChatIds__0='${{ vars.PACOS__ALLOWEDCHATIDS__0 }}' \
@@ -42,4 +48,4 @@ jobs:
               -e Pacos__AllowedLanguageCodes__1='${{ vars.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
               -e Pacos__ChatModel='${{ vars.PACOS__CHATMODEL }}' \
               -e Pacos__ImageGenerationModel='${{ vars.PACOS__IMAGEGENERATIONMODEL }}' \
-              ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
+              ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}

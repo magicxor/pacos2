@@ -9,6 +9,10 @@ on:
         type: string
         description: environment to build and push to
         required: true
+      tag:
+        type: string
+        description: tag for the docker image
+        required: true
 
 name: Build and push (reusable workflow)
 
@@ -36,8 +40,12 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Copy config
+        env:
+          MCP_JSON_CONTENT: ${{ secrets.MCP }}
+          BANWORDS_CONTENT: ${{ vars.BANWORDS }}
         run: |
-          printf "%s" "${{ vars.BANWORDS }}" > ./${{ env.MAIN_PROJECT_DIR }}/banwords.txt
+          printf "%s" "$BANWORDS_CONTENT" > ./${{ env.MAIN_PROJECT_DIR }}/banwords.txt
+          printf "%s" "$MCP_JSON_CONTENT" > ./${{ env.MAIN_PROJECT_DIR }}/mcp.json
 
       # https://github.com/docker/build-push-action
       - name: Build and push
@@ -49,7 +57,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
+            ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}
           platforms: |
             linux/amd64
             linux/arm64/v8
