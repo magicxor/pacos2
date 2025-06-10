@@ -5,6 +5,7 @@
     <File Path="Directory.Packages.props" />
     <File Path="README.md" />
     <File Path="Directory.Build.props" />
+    <File Path=".runsettings" />
   </Folder>
   <Project Path="Pacos.Tests.Unit/Pacos.Tests.Unit.csproj" />
   <Project Path="Pacos/Pacos.csproj" />
