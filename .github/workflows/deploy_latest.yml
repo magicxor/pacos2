@@ -34,10 +34,10 @@ jobs:
             docker run -i -t -d --restart=always --name=${{ env.DOCKER_CONTAINER_NAME }} \
               -e Pacos__TelegramBotApiKey='${{ secrets.PACOS__TELEGRAMBOTAPIKEY }}' \
               -e Pacos__GoogleCloudApiKey='${{ secrets.PACOS__GOOGLECLOUDAPIKEY }}' \
-              -e Pacos__AllowedChatIds__0='${{ secrets.PACOS__ALLOWEDCHATIDS__0 }}' \
-              -e Pacos__AllowedChatIds__1='${{ secrets.PACOS__ALLOWEDCHATIDS__1 }}' \
-              -e Pacos__AllowedChatIds__2='${{ secrets.PACOS__ALLOWEDCHATIDS__2 }}' \
-              -e Pacos__AllowedChatIds__3='${{ secrets.PACOS__ALLOWEDCHATIDS__3 }}' \
-              -e Pacos__AllowedLanguageCodes__0='${{ secrets.PACOS__ALLOWEDLANGUAGECODES__0 }}' \
-              -e Pacos__AllowedLanguageCodes__1='${{ secrets.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
+              -e Pacos__AllowedChatIds__0='${{ vars.PACOS__ALLOWEDCHATIDS__0 }}' \
+              -e Pacos__AllowedChatIds__1='${{ vars.PACOS__ALLOWEDCHATIDS__1 }}' \
+              -e Pacos__AllowedChatIds__2='${{ vars.PACOS__ALLOWEDCHATIDS__2 }}' \
+              -e Pacos__AllowedChatIds__3='${{ vars.PACOS__ALLOWEDCHATIDS__3 }}' \
+              -e Pacos__AllowedLanguageCodes__0='${{ vars.PACOS__ALLOWEDLANGUAGECODES__0 }}' \
+              -e Pacos__AllowedLanguageCodes__1='${{ vars.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:latest
