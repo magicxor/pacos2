@@ -49,7 +49,7 @@ jobs:
 
     - name: Copy config
       run: |
-        echo ${{ vars.BANWORDS }} > ${MAIN_PROJECT_DIR}/banwords.txt
+        echo ${{ vars.BANWORDS }} > ./${MAIN_PROJECT_DIR}/banwords.txt
 
     - name: Run tests
       run: |
