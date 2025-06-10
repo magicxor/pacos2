@@ -35,7 +35,7 @@ jobs:
 
       - name: Copy config
         run: |
-          echo ${{ vars.BANWORDS }} > ./${MAIN_PROJECT_DIR}/banwords.txt
+          printf "%s" "${{ vars.BANWORDS }}" > ./${MAIN_PROJECT_DIR}/banwords.txt
 
       # https://github.com/docker/build-push-action
       - name: Build and push
