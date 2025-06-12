@@ -1,4 +1,5 @@
 ﻿using Markdig;
+using Markdig.Extensions.EmphasisExtras;
 
 namespace Pacos.Extensions;
 
@@ -11,6 +12,7 @@ public static class MarkdownPipelineExtensions
             .UseAutoIdentifiers()
             .UseCustomContainers()
             .UseDefinitionLists()
+            .UseEmphasisExtras(EmphasisExtraOptions.Strikethrough)
             .UseGridTables()
             .UseMediaLinks()
             .UsePipeTables()
