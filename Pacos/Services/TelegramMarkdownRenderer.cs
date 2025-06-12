@@ -112,7 +112,7 @@ public sealed class TelegramMarkdownRenderer
                     var checkedProperty = firstInline.GetType().GetProperty("Checked");
                     bool isChecked = checkedProperty != null && checkedProperty.GetValue(firstInline) is bool checkedValue && checkedValue;
 
-                    checkboxText = isChecked ? "\\[x\\] " : "\\[ \\] ";
+                    checkboxText = isChecked ? @"\[x\] " : @"\[ \] ";
 
                     // Get the remaining text from the second inline element (LiteralInline)
                     var secondInline = firstInline.NextSibling;
@@ -201,7 +201,7 @@ public sealed class TelegramMarkdownRenderer
                     var checkedProperty = firstInline.GetType().GetProperty("Checked");
                     bool isChecked = checkedProperty != null && checkedProperty.GetValue(firstInline) is bool checkedValue && checkedValue;
 
-                    checkboxText = isChecked ? "\\[x\\] " : "\\[ \\] ";
+                    checkboxText = isChecked ? @"\[x\] " : @"\[ \] ";
 
                     // Get the remaining text from the second inline element (LiteralInline)
                     var secondInline = firstInline.NextSibling;
@@ -358,12 +358,12 @@ public sealed class TelegramMarkdownRenderer
     {
         // Convert simple HTML tags to Telegram markdown
         string content = html.Lines.ToString() ?? string.Empty;
-        content = Regex.Replace(content, @"<b>(.*?)</b>", "*$1*", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<i>(.*?)</i>", "_$1_", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<u>(.*?)</u>", "__$1__", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<s>(.*?)</s>", "~$1~", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<code>(.*?)</code>", "`$1`", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<[^>]+>", string.Empty, RegexOptions.IgnoreCase); // Remove other HTML tags
+        content = Regex.Replace(content, "<b>(.*?)</b>", "*$1*", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<i>(.*?)</i>", "_$1_", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<u>(.*?)</u>", "__$1__", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<s>(.*?)</s>", "~$1~", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<code>(.*?)</code>", "`$1`", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<[^>]+>", string.Empty, RegexOptions.IgnoreCase); // Remove other HTML tags
 
         _output.AppendLine(EscapeText(content) + "\n");
     }
@@ -546,14 +546,14 @@ public sealed class TelegramMarkdownRenderer
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
-        return text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("`", "\\`", StringComparison.Ordinal);
+        return text.Replace("\\", @"\\", StringComparison.Ordinal).Replace("`", "\\`", StringComparison.Ordinal);
     }
 
     private static string EscapeLinkUrl(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
 
-        return url.Replace("\\", "\\\\", StringComparison.Ordinal).Replace(")", "\\)", StringComparison.Ordinal);
+        return url.Replace("\\", @"\\", StringComparison.Ordinal).Replace(")", "\\)", StringComparison.Ordinal);
     }
 
     private string GetPlainText(Inline inline)
