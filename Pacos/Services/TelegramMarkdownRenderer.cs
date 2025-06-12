@@ -159,11 +159,12 @@ public sealed class TelegramMarkdownRenderer
                     }
                     else if (block is ListBlock nestedList)
                     {
+                        // Add a line break before nested lists but no extra line
                         _output.AppendLine();
-                        // Add indentation for nested lists
                         var nestedRenderer = new TelegramMarkdownRenderer();
                         string nestedContent = nestedRenderer.RenderListDirectly(nestedList, "  ");
-                        _output.Append(nestedContent);
+                        // Remove the trailing newline from nested content to avoid double spacing
+                        _output.Append(nestedContent.TrimEnd());
                     }
                     else
                     {
@@ -249,7 +250,8 @@ public sealed class TelegramMarkdownRenderer
                     else if (block is ListBlock nestedList)
                     {
                         nestedOutput.AppendLine();
-                        nestedOutput.Append(RenderListDirectly(nestedList, indent + "  "));
+                        string nestedListContent = RenderListDirectly(nestedList, indent + "  ");
+                        nestedOutput.Append(nestedListContent.TrimEnd());
                     }
                 }
             }
