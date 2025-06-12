@@ -92,8 +92,9 @@ public sealed class TelegramMarkdownRenderer
     private void RenderList(ListBlock list)
     {
         int index = 1;
-        foreach (ListItemBlock item in list)
+        foreach (var listItemBlock in list)
         {
+            var item = (ListItemBlock)listItemBlock;
             // Check if this is a task list item
             bool isTaskList = false;
             string checkboxText = "";
@@ -180,8 +181,9 @@ public sealed class TelegramMarkdownRenderer
     {
         var nestedOutput = new StringBuilder();
         int index = 1;
-        foreach (ListItemBlock item in list)
+        foreach (var listItemBlock in list)
         {
+            var item = (ListItemBlock)listItemBlock;
             // Check if this is a task list item
             bool isTaskList = false;
             string checkboxText = "";
