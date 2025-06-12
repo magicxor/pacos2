@@ -267,14 +267,27 @@ public sealed class TelegramBotService
 
         _logger.LogInformation("Replying to {Author} with: {ReplyText}", author, replyText);
 
-        await botClient.SendMessage(new ChatId(updateMessage.Chat.Id),
-            replyText,
-            parseMode: ParseMode.MarkdownV2,
-            replyParameters: new ReplyParameters
-            {
-                MessageId = updateMessage.MessageId,
-            },
-            cancellationToken: cancellationToken);
+        async Task SendReply(ParseMode parseMode)
+        {
+            await botClient.SendMessage(new ChatId(updateMessage.Chat.Id),
+                replyText,
+                parseMode: parseMode,
+                replyParameters: new ReplyParameters
+                {
+                    MessageId = updateMessage.MessageId,
+                },
+                cancellationToken: cancellationToken);
+        }
+
+        try
+        {
+            await SendReply(ParseMode.MarkdownV2);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to send message with MarkdownV2. Falling back to plain text");
+            await SendReply(ParseMode.None);
+        }
     }
 
     private async Task HandleUpdateFunctionAsync(
