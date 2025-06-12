@@ -11,6 +11,7 @@
     <ItemGroup>
         <PackageReference Include="Google_GenerativeAI.Microsoft" />
         <PackageReference Include="Humanizer.Core" />
+        <PackageReference Include="Markdig" />
         <PackageReference Include="Microsoft.Extensions.AI" />
         <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
         <PackageReference Include="Microsoft.Extensions.AI.Evaluation" />

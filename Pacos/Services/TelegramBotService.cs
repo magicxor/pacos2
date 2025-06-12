@@ -22,6 +22,7 @@ public sealed class TelegramBotService
     private readonly WordFilter _wordFilter;
     private readonly ChatService _chatService;
     private readonly GenerativeModelService _generativeModelService;
+    private readonly MarkdownConversionService _markdownConversionService;
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -36,7 +37,8 @@ public sealed class TelegramBotService
         IBackgroundTaskQueue taskQueue,
         WordFilter wordFilter,
         ChatService chatService,
-        GenerativeModelService generativeModelService)
+        GenerativeModelService generativeModelService,
+        MarkdownConversionService markdownConversionService)
     {
         _logger = logger;
         _options = options;
@@ -46,6 +48,7 @@ public sealed class TelegramBotService
         _wordFilter = wordFilter;
         _chatService = chatService;
         _generativeModelService = generativeModelService;
+        _markdownConversionService = markdownConversionService;
     }
 
     private async Task HandleUpdateAsync(ITelegramBotClient botClient,
@@ -260,11 +263,13 @@ public sealed class TelegramBotService
             replyText = $"{e.GetType().Name}: {e.Message}";
         }
 
+        replyText = _markdownConversionService.ConvertToTelegramMarkdown(replyText);
+
         _logger.LogInformation("Replying to {Author} with: {ReplyText}", author, replyText);
 
         await botClient.SendMessage(new ChatId(updateMessage.Chat.Id),
             replyText,
-            parseMode: ParseMode.None,
+            parseMode: ParseMode.MarkdownV2,
             replyParameters: new ReplyParameters
             {
                 MessageId = updateMessage.MessageId,

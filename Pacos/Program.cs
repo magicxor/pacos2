@@ -14,7 +14,7 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Pacos;
 
-public class Program
+public sealed class Program
 {
     private const string NLogConfigFileName = "nlog.config";
     private const string BanWordsFileName = "banwords.txt";
@@ -62,6 +62,7 @@ public class Program
                         s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
                     ));
                 services.AddHostedService<QueuedHostedService>();
+                services.AddSingleton<MarkdownConversionService>();
                 services.AddSingleton<IChatClient>(s =>
                 {
                     var loggerFactory = s.GetRequiredService<ILoggerFactory>();
