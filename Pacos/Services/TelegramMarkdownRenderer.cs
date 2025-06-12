@@ -1,17 +1,16 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-
-#pragma warning disable CA1305,CA1830,CA1834,CA1304,CA1311,CA1310
 
 namespace Pacos.Services;
 
 public sealed class TelegramMarkdownRenderer
 {
     private readonly StringBuilder _output = new();
-    private readonly HashSet<char> _specialChars = new() { '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' };
+    private readonly HashSet<char> _specialChars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
 
     public string Render(MarkdownDocument document)
     {
@@ -67,7 +66,7 @@ public sealed class TelegramMarkdownRenderer
     private void RenderHeading(HeadingBlock heading)
     {
         // Telegram doesn't support headers, so we'll make them bold
-        _output.Append("*");
+        _output.Append('*');
         if (heading.Inline != null)
         {
             foreach (var inline in heading.Inline)
@@ -125,12 +124,12 @@ public sealed class TelegramMarkdownRenderer
 
             if (list.IsOrdered)
             {
-                _output.Append($"{index}\\. ");
+                _output.Append(CultureInfo.InvariantCulture, $"{index}\\. ");
                 index++;
             }
             else if (isTaskList)
             {
-                _output.Append($"\\- {checkboxText}");
+                _output.Append(CultureInfo.InvariantCulture, $"\\- {checkboxText}");
             }
             else
             {
@@ -213,16 +212,16 @@ public sealed class TelegramMarkdownRenderer
 
             if (list.IsOrdered)
             {
-                nestedOutput.Append($"{indent}{index}\\. ");
+                nestedOutput.Append(CultureInfo.InvariantCulture, $"{indent}{index}\\. ");
                 index++;
             }
             else if (isTaskList)
             {
-                nestedOutput.Append($"{indent}\\- {checkboxText}");
+                nestedOutput.Append(CultureInfo.InvariantCulture, $"{indent}\\- {checkboxText}");
             }
             else
             {
-                nestedOutput.Append($"{indent}• ");
+                nestedOutput.Append(CultureInfo.InvariantCulture, $"{indent}• ");
             }
 
             if (isTaskList)
@@ -243,7 +242,7 @@ public sealed class TelegramMarkdownRenderer
                             {
                                 var inlineRenderer = new TelegramMarkdownRenderer();
                                 inlineRenderer.RenderInline(inline);
-                                nestedOutput.Append(inlineRenderer._output.ToString());
+                                nestedOutput.Append(inlineRenderer._output);
                             }
                         }
                     }
@@ -304,7 +303,7 @@ public sealed class TelegramMarkdownRenderer
     {
         if (code is FencedCodeBlock fenced && !string.IsNullOrEmpty(fenced.Info))
         {
-            _output.AppendLine($"```{EscapeCodeContent(fenced.Info)}");
+            _output.AppendLine(CultureInfo.InvariantCulture, $"```{EscapeCodeContent(fenced.Info)}");
         }
         else
         {
@@ -384,7 +383,7 @@ public sealed class TelegramMarkdownRenderer
                 RenderLink(link);
                 break;
             case CodeInline code:
-                _output.Append($"`{EscapeCodeContent(code.Content)}`");
+                _output.Append(CultureInfo.InvariantCulture, $"`{EscapeCodeContent(code.Content)}`");
                 break;
             case LineBreakInline:
                 _output.AppendLine();
@@ -393,7 +392,7 @@ public sealed class TelegramMarkdownRenderer
                 RenderHtmlInline(html);
                 break;
             case AutolinkInline autolink:
-                _output.Append($"[{EscapeText(autolink.Url)}]({EscapeLinkUrl(autolink.Url)})");
+                _output.Append(CultureInfo.InvariantCulture, $"[{EscapeText(autolink.Url)}]({EscapeLinkUrl(autolink.Url)})");
                 break;
             default:
                 // For unknown inline types, check if it's a container
@@ -457,7 +456,7 @@ public sealed class TelegramMarkdownRenderer
         if (link.IsImage)
         {
             // Images are not supported in Telegram markdown, show as a link instead
-            _output.Append("[");
+            _output.Append('[');
             // Use alt text from the image, or "Image" as fallback
             foreach (var child in link)
             {
@@ -468,39 +467,39 @@ public sealed class TelegramMarkdownRenderer
             {
                 _output.Append("Image");
             }
-            _output.Append($"]({EscapeLinkUrl(link.Url ?? "")})");
+            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? "")})");
         }
         else
         {
-            _output.Append("[");
+            _output.Append('[');
             foreach (var child in link)
             {
                 RenderInline(child, true);
             }
-            _output.Append($"]({EscapeLinkUrl(link.Url ?? "")})");
+            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? "")})");
         }
     }
 
     private void RenderHtmlInline(HtmlInline html)
     {
         string tag = html.Tag;
-        switch (tag.ToLower())
+        switch (tag.ToLowerInvariant())
         {
             case "b":
             case "strong":
-                _output.Append("*");
+                _output.Append('*');
                 break;
             case "/b":
             case "/strong":
-                _output.Append("*");
+                _output.Append('*');
                 break;
             case "i":
             case "em":
-                _output.Append("_");
+                _output.Append('_');
                 break;
             case "/i":
             case "/em":
-                _output.Append("_");
+                _output.Append('_');
                 break;
             case "u":
                 _output.Append("__");
@@ -510,17 +509,17 @@ public sealed class TelegramMarkdownRenderer
                 break;
             case "s":
             case "strike":
-                _output.Append("~");
+                _output.Append('~');
                 break;
             case "/s":
             case "/strike":
-                _output.Append("~");
+                _output.Append('~');
                 break;
             case "code":
-                _output.Append("`");
+                _output.Append('`');
                 break;
             case "/code":
-                _output.Append("`");
+                _output.Append('`');
                 break;
             default:
                 // Ignore other HTML tags
