@@ -96,19 +96,29 @@ public sealed class TelegramMarkdownRenderer
         foreach (ListItemBlock item in list)
         {
             // Check if this is a task list item
-            string taskMarker = "• ";
+            bool isTaskList = false;
+            string checkboxText = "";
+            string remainingText = "";
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
+                // Check if the first inline element is a TaskList
                 var firstInline = firstPara.Inline.FirstChild;
-                if (firstInline is LiteralInline literal)
+                if (firstInline != null && firstInline.GetType().Name == "TaskList")
                 {
-                    var content = literal.Content.ToString();
-                    if (content.StartsWith("[x] ") || content.StartsWith("[ ] "))
+                    isTaskList = true;
+
+                    // Get the task list state using reflection
+                    var checkedProperty = firstInline.GetType().GetProperty("Checked");
+                    bool isChecked = checkedProperty != null && checkedProperty.GetValue(firstInline) is bool checkedValue && checkedValue;
+
+                    checkboxText = isChecked ? "\\[x\\] " : "\\[ \\] ";
+
+                    // Get the remaining text from the second inline element (LiteralInline)
+                    var secondInline = firstInline.NextSibling;
+                    if (secondInline is LiteralInline literal)
                     {
-                        taskMarker = content.StartsWith("[x] ") ? "☑ " : "☐ ";
-                        // Remove the checkbox from the literal content
-                        literal.Content = new Markdig.Helpers.StringSlice(content.Substring(4));
+                        remainingText = literal.Content.ToString();
                     }
                 }
             }
@@ -118,34 +128,47 @@ public sealed class TelegramMarkdownRenderer
                 _output.Append($"{index}\\. ");
                 index++;
             }
+            else if (isTaskList)
+            {
+                _output.Append($"\\- {checkboxText}");
+            }
             else
             {
-                _output.Append(taskMarker);
+                _output.Append("• ");
             }
 
-            foreach (var block in item)
+            if (isTaskList)
             {
-                if (block is ParagraphBlock para)
+                // For task lists, just output the remaining text after checkbox
+                _output.Append(EscapeText(remainingText));
+            }
+            else
+            {
+                // For regular lists, render all blocks normally
+                foreach (var block in item)
                 {
-                    if (para.Inline != null)
+                    if (block is ParagraphBlock para)
                     {
-                        foreach (var inline in para.Inline)
+                        if (para.Inline != null)
                         {
-                            RenderInline(inline);
+                            foreach (var inline in para.Inline)
+                            {
+                                RenderInline(inline);
+                            }
                         }
                     }
-                }
-                else if (block is ListBlock nestedList)
-                {
-                    _output.AppendLine();
-                    // Add indentation for nested lists
-                    var nestedRenderer = new TelegramMarkdownRenderer();
-                    string nestedContent = nestedRenderer.RenderListDirectly(nestedList, "  ");
-                    _output.Append(nestedContent);
-                }
-                else
-                {
-                    RenderBlock(block);
+                    else if (block is ListBlock nestedList)
+                    {
+                        _output.AppendLine();
+                        // Add indentation for nested lists
+                        var nestedRenderer = new TelegramMarkdownRenderer();
+                        string nestedContent = nestedRenderer.RenderListDirectly(nestedList, "  ");
+                        _output.Append(nestedContent);
+                    }
+                    else
+                    {
+                        RenderBlock(block);
+                    }
                 }
             }
             _output.AppendLine();
@@ -159,34 +182,75 @@ public sealed class TelegramMarkdownRenderer
         int index = 1;
         foreach (ListItemBlock item in list)
         {
+            // Check if this is a task list item
+            bool isTaskList = false;
+            string checkboxText = "";
+            string remainingText = "";
+
+            if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
+            {
+                // Check if the first inline element is a TaskList
+                var firstInline = firstPara.Inline.FirstChild;
+                if (firstInline != null && firstInline.GetType().Name == "TaskList")
+                {
+                    isTaskList = true;
+
+                    // Get the task list state using reflection
+                    var checkedProperty = firstInline.GetType().GetProperty("Checked");
+                    bool isChecked = checkedProperty != null && checkedProperty.GetValue(firstInline) is bool checkedValue && checkedValue;
+
+                    checkboxText = isChecked ? "\\[x\\] " : "\\[ \\] ";
+
+                    // Get the remaining text from the second inline element (LiteralInline)
+                    var secondInline = firstInline.NextSibling;
+                    if (secondInline is LiteralInline literal)
+                    {
+                        remainingText = literal.Content.ToString();
+                    }
+                }
+            }
+
             if (list.IsOrdered)
             {
                 nestedOutput.Append($"{indent}{index}\\. ");
                 index++;
+            }
+            else if (isTaskList)
+            {
+                nestedOutput.Append($"{indent}\\- {checkboxText}");
             }
             else
             {
                 nestedOutput.Append($"{indent}• ");
             }
 
-            foreach (var block in item)
+            if (isTaskList)
             {
-                if (block is ParagraphBlock para)
+                // For task lists, just output the remaining text after checkbox
+                nestedOutput.Append(EscapeText(remainingText));
+            }
+            else
+            {
+                // For regular lists, render all blocks normally
+                foreach (var block in item)
                 {
-                    if (para.Inline != null)
+                    if (block is ParagraphBlock para)
                     {
-                        foreach (var inline in para.Inline)
+                        if (para.Inline != null)
                         {
-                            var inlineRenderer = new TelegramMarkdownRenderer();
-                            inlineRenderer.RenderInline(inline);
-                            nestedOutput.Append(inlineRenderer._output.ToString());
+                            foreach (var inline in para.Inline)
+                            {
+                                var inlineRenderer = new TelegramMarkdownRenderer();
+                                inlineRenderer.RenderInline(inline);
+                                nestedOutput.Append(inlineRenderer._output.ToString());
+                            }
                         }
                     }
-                }
-                else if (block is ListBlock nestedList)
-                {
-                    nestedOutput.AppendLine();
-                    nestedOutput.Append(RenderListDirectly(nestedList, indent + "  "));
+                    else if (block is ListBlock nestedList)
+                    {
+                        nestedOutput.AppendLine();
+                        nestedOutput.Append(RenderListDirectly(nestedList, indent + "  "));
+                    }
                 }
             }
             nestedOutput.AppendLine();
