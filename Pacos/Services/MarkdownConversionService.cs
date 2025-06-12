@@ -1,11 +1,12 @@
 ﻿using Markdig;
+using Pacos.Extensions;
 
 namespace Pacos.Services;
 
 public sealed class MarkdownConversionService
 {
     private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions()
+        .UseMdExtensions()
         .Build();
     private static readonly TelegramMarkdownRenderer TelegramMarkdownRenderer = new();
 
