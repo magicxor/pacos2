@@ -97,8 +97,8 @@ public sealed class TelegramMarkdownRenderer
             var item = (ListItemBlock)listItemBlock;
             // Check if this is a task list item
             bool isTaskList = false;
-            string checkboxText = "";
-            string remainingText = "";
+            string checkboxText = string.Empty;
+            string remainingText = string.Empty;
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
@@ -186,8 +186,8 @@ public sealed class TelegramMarkdownRenderer
             var item = (ListItemBlock)listItemBlock;
             // Check if this is a task list item
             bool isTaskList = false;
-            string checkboxText = "";
-            string remainingText = "";
+            string checkboxText = string.Empty;
+            string remainingText = string.Empty;
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
@@ -314,7 +314,7 @@ public sealed class TelegramMarkdownRenderer
 
         foreach (var line in code.Lines)
         {
-            _output.AppendLine(EscapeCodeContent(line.ToString() ?? ""));
+            _output.AppendLine(EscapeCodeContent(line.ToString() ?? string.Empty));
         }
         _output.AppendLine("```\n");
     }
@@ -336,14 +336,11 @@ public sealed class TelegramMarkdownRenderer
                         var cellContent = new StringBuilder();
                         foreach (var block in tableCell)
                         {
-                            if (block is ParagraphBlock para)
+                            if (block is ParagraphBlock { Inline: not null } para)
                             {
-                                if (para.Inline != null)
+                                foreach (var inline in para.Inline)
                                 {
-                                    foreach (var inline in para.Inline)
-                                    {
-                                        cellContent.Append(GetPlainText(inline));
-                                    }
+                                    cellContent.Append(GetPlainText(inline));
                                 }
                             }
                         }
@@ -360,13 +357,13 @@ public sealed class TelegramMarkdownRenderer
     private void RenderHtmlBlock(HtmlBlock html)
     {
         // Convert simple HTML tags to Telegram markdown
-        string content = html.Lines.ToString() ?? "";
+        string content = html.Lines.ToString() ?? string.Empty;
         content = Regex.Replace(content, @"<b>(.*?)</b>", "*$1*", RegexOptions.IgnoreCase);
         content = Regex.Replace(content, @"<i>(.*?)</i>", "_$1_", RegexOptions.IgnoreCase);
         content = Regex.Replace(content, @"<u>(.*?)</u>", "__$1__", RegexOptions.IgnoreCase);
         content = Regex.Replace(content, @"<s>(.*?)</s>", "~$1~", RegexOptions.IgnoreCase);
         content = Regex.Replace(content, @"<code>(.*?)</code>", "`$1`", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<[^>]+>", "", RegexOptions.IgnoreCase); // Remove other HTML tags
+        content = Regex.Replace(content, @"<[^>]+>", string.Empty, RegexOptions.IgnoreCase); // Remove other HTML tags
 
         _output.AppendLine(EscapeText(content) + "\n");
     }
@@ -411,7 +408,7 @@ public sealed class TelegramMarkdownRenderer
 
     private void RenderEmphasis(EmphasisInline emphasis)
     {
-        string marker = "";
+        string marker = string.Empty;
 
         // Handle different emphasis types based on delimiter character and count
         if (emphasis.DelimiterChar == '_' && emphasis.DelimiterCount == 2)
@@ -469,7 +466,7 @@ public sealed class TelegramMarkdownRenderer
             {
                 _output.Append("Image");
             }
-            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? "")})");
+            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? string.Empty)})");
         }
         else
         {
@@ -478,7 +475,7 @@ public sealed class TelegramMarkdownRenderer
             {
                 RenderInline(child, true);
             }
-            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? "")})");
+            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? string.Empty)})");
         }
     }
 
@@ -545,18 +542,18 @@ public sealed class TelegramMarkdownRenderer
         return result.ToString();
     }
 
-    private string EscapeCodeContent(string text)
+    private static string EscapeCodeContent(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
-        return text.Replace("\\", "\\\\").Replace("`", "\\`");
+        return text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("`", "\\`", StringComparison.Ordinal);
     }
 
-    private string EscapeLinkUrl(string url)
+    private static string EscapeLinkUrl(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
 
-        return url.Replace("\\", "\\\\").Replace(")", "\\)");
+        return url.Replace("\\", "\\\\", StringComparison.Ordinal).Replace(")", "\\)", StringComparison.Ordinal);
     }
 
     private string GetPlainText(Inline inline)

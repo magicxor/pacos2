@@ -87,7 +87,8 @@ public sealed class TelegramBotService
             _logger.LogInformation("No photo in !draw command by {Author}, attempting to use photo from replied-to message", author);
         }
 
-        if (sourcePhotoSizes != null) // Indicates image-to-image is possible
+        // Indicates image-to-image is possible
+        if (sourcePhotoSizes != null)
         {
             // Image-to-Image
             _logger.LogInformation("Performing image-to-image for {Author} using photo from {PhotoSourceContext}", author, photoSourceMessageContext);
@@ -125,8 +126,9 @@ public sealed class TelegramBotService
                 _logger.LogWarning("Failed image-to-image for {Author} (photo from {PhotoSourceContext}): {Error}", author, photoSourceMessageContext, error);
             }
         }
-        else // Fallback to Text-to-Image if no suitable photo found
+        else
         {
+            /* Fallback to Text-to-Image if no suitable photo found */
             // Text-to-Image
             if (string.IsNullOrWhiteSpace(prompt))
             {
@@ -226,11 +228,16 @@ public sealed class TelegramBotService
         }
 
         _logger.LogInformation("Processing prompt from {Author} (lang={LanguageCode}): \"{UserMessage}\"{OriginalMessageLog}",
-            author, languageCode, messageText, originalMessageLogInfo); // Log user's message and info about replied message
+            author,
+            languageCode,
+            messageText,
+            originalMessageLogInfo); // Log user's message and info about replied message
 
         var mediaInfo = GetFileInfo(updateMessage) ?? GetFileInfo(updateMessage.ReplyToMessage);
         _logger.LogInformation("Media info for message from {Author}: FileId={FileId}, MimeType={MimeType}",
-            author, mediaInfo?.FileId, mediaInfo?.MimeType);
+            author,
+            mediaInfo?.FileId,
+            mediaInfo?.MimeType);
 
         var mediaBytes = await DownloadMediaIfPresentAsync(mediaInfo?.FileId, botClient, cancellationToken);
 
@@ -298,7 +305,7 @@ public sealed class TelegramBotService
         try
         {
             if (update is { Type: UpdateType.Message, Message: { ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null, From: not null } }
-                && update.Message.IsAutomaticForward != true
+                && !update.Message.IsAutomaticForward
                 && _options.Value.AllowedChatIds.Any(chatId => chatId == update.Message.Chat.Id))
             {
                 var author = update.Message.From.Username ?? string.Join(' ', update.Message.From.FirstName, update.Message.From.LastName).Trim();

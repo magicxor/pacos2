@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using ModelContextProtocol.Client;
@@ -31,6 +32,7 @@ public sealed class McpProvider
         _mcpConfigJson = mcpConfigJson;
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "McpClientFactory handles disposal of the client transport")]
     private async Task<IMcpClient?> BuildMcpClientFromModelAsync(string mcpServerName, McpServer mcpServerModel)
     {
         mcpServerModel.Name = mcpServerName;
@@ -49,7 +51,7 @@ public sealed class McpProvider
             {
                 case ServerType.Sse:
                 {
-                    ArgumentException.ThrowIfNullOrWhiteSpace(mcpServerModel.Url, nameof(mcpServerModel.Url));
+                    ArgumentException.ThrowIfNullOrWhiteSpace(mcpServerModel.Url);
                     var clientTransport = new SseClientTransport(
                         new SseClientTransportOptions
                         {
@@ -60,7 +62,7 @@ public sealed class McpProvider
                 }
                 case ServerType.Stdio:
                 {
-                    ArgumentException.ThrowIfNullOrWhiteSpace(mcpServerModel.Command, nameof(mcpServerModel.Command));
+                    ArgumentException.ThrowIfNullOrWhiteSpace(mcpServerModel.Command);
                     var clientTransport = new StdioClientTransport(
                         new StdioClientTransportOptions
                         {
@@ -71,6 +73,8 @@ public sealed class McpProvider
                         });
                     return await McpClientFactory.CreateAsync(clientTransport);
                 }
+                default:
+                    throw new NotSupportedException($"Unsupported MCP server type: {type}");
             }
         }
         catch (Exception e)
@@ -123,18 +127,15 @@ public sealed class McpProvider
 
         try
         {
-            if (_currentMcpClients == null)
+            _currentMcpClients = await BuildMcpClientsFromConfigAsync();
+            var mcpTools = new List<AITool>();
+
+            foreach (var mcpClient in _currentMcpClients)
             {
-                _currentMcpClients = await BuildMcpClientsFromConfigAsync();
-                var mcpTools = new List<AITool>();
-
-                foreach (var mcpClient in _currentMcpClients)
-                {
-                    mcpTools.AddRange(await mcpClient.ListToolsAsync());
-                }
-
-                _currentMcpTools = mcpTools;
+                mcpTools.AddRange(await mcpClient.ListToolsAsync());
             }
+
+            _currentMcpTools = mcpTools;
         }
         catch (Exception e)
         {

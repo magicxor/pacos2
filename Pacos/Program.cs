@@ -102,7 +102,9 @@ public sealed class Program
         catch (OperationCanceledException)
         {
             // This is expected when the application is shutting down gracefully
+#pragma warning disable S6667
             LogManager.GetCurrentClassLogger().Info("Application shut down gracefully.");
+#pragma warning restore S6667
         }
         finally
         {
