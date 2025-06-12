@@ -454,8 +454,19 @@ public sealed class TelegramMarkdownRenderer
     {
         if (link.IsImage)
         {
-            // Images are not supported in Telegram markdown, just show the alt text
-            _output.Append(EscapeText(link.Title ?? "Image"));
+            // Images are not supported in Telegram markdown, show as a link instead
+            _output.Append("[");
+            // Use alt text from the image, or "Image" as fallback
+            foreach (var child in link)
+            {
+                RenderInline(child, true);
+            }
+            // If no alt text was found, use a default
+            if (link.FirstChild == null)
+            {
+                _output.Append("Image");
+            }
+            _output.Append($"]({EscapeLinkUrl(link.Url ?? "")})");
         }
         else
         {
