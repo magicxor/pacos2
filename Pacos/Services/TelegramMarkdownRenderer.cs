@@ -426,12 +426,12 @@ public sealed class TelegramMarkdownRenderer
         else if (emphasis.DelimiterChar == '_' && emphasis.DelimiterCount == 1)
         {
             // Single underscore is italic
-            marker = "_";
+            marker = "\u200B_\u200B";
         }
         else if (emphasis.DelimiterChar == '*' && emphasis.DelimiterCount == 1)
         {
             // Single asterisk is italic (but we prefer underscore for consistency)
-            marker = "_";
+            marker = "\u200B_\u200B";
         }
         else if (emphasis.DelimiterChar == '~')
         {
