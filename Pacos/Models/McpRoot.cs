@@ -2,7 +2,7 @@
 
 namespace Pacos.Models;
 
-public class McpRoot
+public sealed class McpRoot
 {
     [JsonPropertyName("mcpServers")]
     public Dictionary<string, McpServer>? McpServers { get; set; }

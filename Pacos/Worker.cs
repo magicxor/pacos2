@@ -2,7 +2,7 @@ using Pacos.Services;
 
 namespace Pacos;
 
-public class Worker : BackgroundService
+public sealed class Worker : BackgroundService
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private TelegramBotService? _telegramBotService;

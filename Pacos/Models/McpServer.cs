@@ -3,7 +3,7 @@ using Pacos.Enums;
 
 namespace Pacos.Models;
 
-public record McpServer
+public sealed class McpServer
 {
     [JsonPropertyName("type")]
     public ServerType Type { get; init; }

@@ -70,6 +70,7 @@ public sealed class ChatService : IDisposable
             chatHistory.Add(new ChatMessage(ChatRole.User, messageText));
 
             var responseText = responseObject.Text;
+
             var dataContents = responseObject.Messages
                 .SelectMany(x => x.Contents
                     .OfType<DataContent>())
@@ -77,6 +78,22 @@ public sealed class ChatService : IDisposable
                 .AsReadOnly();
 
             chatHistory.Add(new ChatMessage(ChatRole.Assistant, responseText));
+
+            var functionCalls = responseObject.Messages
+                .SelectMany(x => x.Contents
+                    .OfType<FunctionCallContent>())
+                .ToList()
+                .AsReadOnly();
+
+            var functionCallCount = functionCalls.Count;
+            if (functionCallCount > 0)
+            {
+                responseText = $"[{functionCallCount}🔧] " + responseText;
+
+                var functionCallsSerialized = functionCalls.Select(x => $"{x.Name} ({string.Join(", ", x.Arguments?.Select(a => $"{a.Key}: {a.Value}") ?? [])})");
+                var functionCallsString = string.Join(", ", $"[{functionCallsSerialized}]");
+                _logger.LogInformation("Function calls: {FunctionCalls}", functionCallsString);
+            }
 
             return (responseText, dataContents);
         }
