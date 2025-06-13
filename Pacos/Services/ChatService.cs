@@ -59,7 +59,7 @@ public sealed class ChatService : IDisposable
 
             var userMessage = new ChatMessage
             {
-                MessageId  = messageId.ToString(CultureInfo.InvariantCulture),
+                MessageId = messageId.ToString(CultureInfo.InvariantCulture),
                 AuthorName = authorName,
                 Contents = inputContents,
                 Role = ChatRole.User,
