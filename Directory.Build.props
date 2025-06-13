@@ -4,11 +4,13 @@
   <PropertyGroup>
     <!-- Code analysis -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisLevel>9-Recommended</AnalysisLevel>
+    <AnalysisLevel>9-all</AnalysisLevel>
 
     <!-- Warnings and errors -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Features>strict</Features>
 
     <!--
     CS0618 - Member is obsolete

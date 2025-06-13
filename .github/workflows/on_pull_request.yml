@@ -9,5 +9,4 @@ jobs:
     name: Run tests
     uses: ./.github/workflows/run_tests.yml
     secrets: inherit
-    with:
-      environment: staging
+

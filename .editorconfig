@@ -318,6 +318,24 @@ dotnet_diagnostic.SS033.severity = suggestion
 # CA1711: Rename type name BackgroundTaskQueue so that it does not end in 'Queue'
 dotnet_diagnostic.CA1711.severity = suggestion
 
+# SA1011: Closing square bracket should be followed by a space.
+dotnet_diagnostic.SA1011.severity = none
+
+# S1118: Add a 'private' constructor or the 'static' keyword to the class declaration.
+dotnet_diagnostic.S1118.severity = none
+
+# CA1032: Add the following constructor to ServiceException: public ServiceException()
+dotnet_diagnostic.CA1032.severity = suggestion
+
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none
+
+# SA1513: Closing brace should be followed by blank line
+dotnet_diagnostic.SA1513.severity = none
+
+# SS018: Missing enum member in switched cases.
+dotnet_diagnostic.SS018.severity = none
+
 # ReSharper
 resharper_redundant_type_declaration_body_highlighting = none
 
@@ -332,3 +350,13 @@ charset = utf-8
 
 [*.{json,xml,html,csproj,sln,slnx,config,yml,yaml,props}]
 indent_size = 2
+
+# Verify settings
+[*.{received,verified}.{json,txt,xml}]
+charset = utf-8-bom
+end_of_line = lf
+indent_size = unset
+indent_style = unset
+insert_final_newline = false
+tab_width = unset
+trim_trailing_whitespace = false

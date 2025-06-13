@@ -4,6 +4,22 @@
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Global Analyzers -->
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
+    <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.1.118" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="4.13.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </GlobalPackageReference>
+    <GlobalPackageReference Include="Roslynator.Formatting.Analyzers" Version="4.13.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </GlobalPackageReference>
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.11.0.117924" />
+    <GlobalPackageReference Include="SharpSource" Version="1.27.1" />
+  </ItemGroup>
+  <!-- Package versions -->
+  <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="coverlet.msbuild" Version="6.0.4" />
     <PackageVersion Include="Google_GenerativeAI.Microsoft" Version="2.7.0" />
@@ -24,7 +40,7 @@
     <PackageVersion Include="NLog.Extensions.Logging" Version="5.5.0" />
     <PackageVersion Include="NTextCat" Version="0.3.65" />
     <PackageVersion Include="NUnit" Version="4.3.2" />
-    <PackageVersion Include="NUnit.Analyzers" Version="4.9.0">
+    <PackageVersion Include="NUnit.Analyzers" Version="4.9.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
@@ -34,5 +50,7 @@
     <PackageVersion Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageVersion Include="Refit" Version="8.0.0" />
     <PackageVersion Include="Telegram.Bot" Version="22.5.1" />
+    <PackageVersion Include="Verify" Version="30.3.1" />
+    <PackageVersion Include="Verify.NUnit" Version="30.3.1" />
   </ItemGroup>
 </Project>

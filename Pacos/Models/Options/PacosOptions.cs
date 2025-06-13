@@ -5,7 +5,7 @@ namespace Pacos.Models.Options;
 public sealed class PacosOptions
 {
     [Required]
-    [RegularExpression(@".*:.*")]
+    [RegularExpression(".*:.*")]
     public required string TelegramBotApiKey { get; init; }
 
     [Required]
@@ -20,10 +20,8 @@ public sealed class PacosOptions
     public required string[] AllowedLanguageCodes { get; set; }
 
     [Required]
-    [MinLength(1)]
     public required string ChatModel { get; set; }
 
     [Required]
-    [MinLength(1)]
     public required string ImageGenerationModel { get; set; }
 }

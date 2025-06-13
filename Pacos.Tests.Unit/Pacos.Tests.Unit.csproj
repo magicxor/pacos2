@@ -25,6 +25,8 @@
     </PackageReference>
     <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Verify" />
+    <PackageReference Include="Verify.NUnit" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +35,29 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pacos\Pacos.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Files\checkbox_test.md" />
+    <Content Include="Files\checkbox_test.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Files\image_test.md" />
+    <Content Include="Files\image_test.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Files\table_test.md" />
+    <Content Include="Files\table_test.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Files\test_all_en.md" />
+    <Content Include="Files\test_all_en.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Files\test_all_ru.md" />
+    <Content Include="Files\test_all_ru.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

@@ -1,17 +1,18 @@
-﻿using System.Text;
+﻿using System.Collections.Frozen;
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-#pragma warning disable CA1305,CA1830,CA1834,CA1304,CA1311,CA1310
-
 namespace Pacos.Services;
 
 public sealed class TelegramMarkdownRenderer
 {
+    private static readonly FrozenSet<char> SpecialChars = new HashSet<char> { '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' }.ToFrozenSet();
+
     private readonly StringBuilder _output = new();
-    private readonly HashSet<char> _specialChars = new() { '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' };
 
     public string Render(MarkdownDocument document)
     {
@@ -67,7 +68,7 @@ public sealed class TelegramMarkdownRenderer
     private void RenderHeading(HeadingBlock heading)
     {
         // Telegram doesn't support headers, so we'll make them bold
-        _output.Append("*");
+        _output.Append('*');
         if (heading.Inline != null)
         {
             foreach (var inline in heading.Inline)
@@ -93,12 +94,13 @@ public sealed class TelegramMarkdownRenderer
     private void RenderList(ListBlock list)
     {
         int index = 1;
-        foreach (ListItemBlock item in list)
+        foreach (var listItemBlock in list)
         {
+            var item = (ListItemBlock)listItemBlock;
             // Check if this is a task list item
             bool isTaskList = false;
-            string checkboxText = "";
-            string remainingText = "";
+            string checkboxText = string.Empty;
+            string remainingText = string.Empty;
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
@@ -112,7 +114,7 @@ public sealed class TelegramMarkdownRenderer
                     var checkedProperty = firstInline.GetType().GetProperty("Checked");
                     bool isChecked = checkedProperty != null && checkedProperty.GetValue(firstInline) is bool checkedValue && checkedValue;
 
-                    checkboxText = isChecked ? "\\[x\\] " : "\\[ \\] ";
+                    checkboxText = isChecked ? @"\[x\] " : @"\[ \] ";
 
                     // Get the remaining text from the second inline element (LiteralInline)
                     var secondInline = firstInline.NextSibling;
@@ -125,12 +127,12 @@ public sealed class TelegramMarkdownRenderer
 
             if (list.IsOrdered)
             {
-                _output.Append($"{index}\\. ");
+                _output.Append(CultureInfo.InvariantCulture, $"{index}\\. ");
                 index++;
             }
             else if (isTaskList)
             {
-                _output.Append($"\\- {checkboxText}");
+                _output.Append(CultureInfo.InvariantCulture, $"\\- {checkboxText}");
             }
             else
             {
@@ -181,12 +183,13 @@ public sealed class TelegramMarkdownRenderer
     {
         var nestedOutput = new StringBuilder();
         int index = 1;
-        foreach (ListItemBlock item in list)
+        foreach (var listItemBlock in list)
         {
+            var item = (ListItemBlock)listItemBlock;
             // Check if this is a task list item
             bool isTaskList = false;
-            string checkboxText = "";
-            string remainingText = "";
+            string checkboxText = string.Empty;
+            string remainingText = string.Empty;
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
@@ -200,7 +203,7 @@ public sealed class TelegramMarkdownRenderer
                     var checkedProperty = firstInline.GetType().GetProperty("Checked");
                     bool isChecked = checkedProperty != null && checkedProperty.GetValue(firstInline) is bool checkedValue && checkedValue;
 
-                    checkboxText = isChecked ? "\\[x\\] " : "\\[ \\] ";
+                    checkboxText = isChecked ? @"\[x\] " : @"\[ \] ";
 
                     // Get the remaining text from the second inline element (LiteralInline)
                     var secondInline = firstInline.NextSibling;
@@ -213,16 +216,16 @@ public sealed class TelegramMarkdownRenderer
 
             if (list.IsOrdered)
             {
-                nestedOutput.Append($"{indent}{index}\\. ");
+                nestedOutput.Append(CultureInfo.InvariantCulture, $"{indent}{index}\\. ");
                 index++;
             }
             else if (isTaskList)
             {
-                nestedOutput.Append($"{indent}\\- {checkboxText}");
+                nestedOutput.Append(CultureInfo.InvariantCulture, $"{indent}\\- {checkboxText}");
             }
             else
             {
-                nestedOutput.Append($"{indent}• ");
+                nestedOutput.Append(CultureInfo.InvariantCulture, $"{indent}• ");
             }
 
             if (isTaskList)
@@ -243,7 +246,7 @@ public sealed class TelegramMarkdownRenderer
                             {
                                 var inlineRenderer = new TelegramMarkdownRenderer();
                                 inlineRenderer.RenderInline(inline);
-                                nestedOutput.Append(inlineRenderer._output.ToString());
+                                nestedOutput.Append(inlineRenderer._output);
                             }
                         }
                     }
@@ -304,7 +307,7 @@ public sealed class TelegramMarkdownRenderer
     {
         if (code is FencedCodeBlock fenced && !string.IsNullOrEmpty(fenced.Info))
         {
-            _output.AppendLine($"```{EscapeCodeContent(fenced.Info)}");
+            _output.AppendLine(CultureInfo.InvariantCulture, $"```{EscapeCodeContent(fenced.Info)}");
         }
         else
         {
@@ -313,7 +316,7 @@ public sealed class TelegramMarkdownRenderer
 
         foreach (var line in code.Lines)
         {
-            _output.AppendLine(EscapeCodeContent(line.ToString() ?? ""));
+            _output.AppendLine(EscapeCodeContent(line.ToString() ?? string.Empty));
         }
         _output.AppendLine("```\n");
     }
@@ -335,14 +338,11 @@ public sealed class TelegramMarkdownRenderer
                         var cellContent = new StringBuilder();
                         foreach (var block in tableCell)
                         {
-                            if (block is ParagraphBlock para)
+                            if (block is ParagraphBlock { Inline: not null } para)
                             {
-                                if (para.Inline != null)
+                                foreach (var inline in para.Inline)
                                 {
-                                    foreach (var inline in para.Inline)
-                                    {
-                                        cellContent.Append(GetPlainText(inline));
-                                    }
+                                    cellContent.Append(GetPlainText(inline));
                                 }
                             }
                         }
@@ -359,13 +359,13 @@ public sealed class TelegramMarkdownRenderer
     private void RenderHtmlBlock(HtmlBlock html)
     {
         // Convert simple HTML tags to Telegram markdown
-        string content = html.Lines.ToString() ?? "";
-        content = Regex.Replace(content, @"<b>(.*?)</b>", "*$1*", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<i>(.*?)</i>", "_$1_", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<u>(.*?)</u>", "__$1__", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<s>(.*?)</s>", "~$1~", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<code>(.*?)</code>", "`$1`", RegexOptions.IgnoreCase);
-        content = Regex.Replace(content, @"<[^>]+>", "", RegexOptions.IgnoreCase); // Remove other HTML tags
+        string content = html.Lines.ToString() ?? string.Empty;
+        content = Regex.Replace(content, "<b>(.*?)</b>", "*$1*", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<i>(.*?)</i>", "_$1_", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<u>(.*?)</u>", "__$1__", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<s>(.*?)</s>", "~$1~", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<code>(.*?)</code>", "`$1`", RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, "<[^>]+>", string.Empty, RegexOptions.IgnoreCase); // Remove other HTML tags
 
         _output.AppendLine(EscapeText(content) + "\n");
     }
@@ -384,7 +384,7 @@ public sealed class TelegramMarkdownRenderer
                 RenderLink(link);
                 break;
             case CodeInline code:
-                _output.Append($"`{EscapeCodeContent(code.Content)}`");
+                _output.Append(CultureInfo.InvariantCulture, $"`{EscapeCodeContent(code.Content)}`");
                 break;
             case LineBreakInline:
                 _output.AppendLine();
@@ -393,7 +393,7 @@ public sealed class TelegramMarkdownRenderer
                 RenderHtmlInline(html);
                 break;
             case AutolinkInline autolink:
-                _output.Append($"[{EscapeText(autolink.Url)}]({EscapeLinkUrl(autolink.Url)})");
+                _output.Append(CultureInfo.InvariantCulture, $"[{EscapeText(autolink.Url)}]({EscapeLinkUrl(autolink.Url)})");
                 break;
             default:
                 // For unknown inline types, check if it's a container
@@ -410,7 +410,7 @@ public sealed class TelegramMarkdownRenderer
 
     private void RenderEmphasis(EmphasisInline emphasis)
     {
-        string marker = "";
+        string marker = string.Empty;
 
         // Handle different emphasis types based on delimiter character and count
         if (emphasis.DelimiterChar == '_' && emphasis.DelimiterCount == 2)
@@ -457,7 +457,7 @@ public sealed class TelegramMarkdownRenderer
         if (link.IsImage)
         {
             // Images are not supported in Telegram markdown, show as a link instead
-            _output.Append("[");
+            _output.Append('[');
             // Use alt text from the image, or "Image" as fallback
             foreach (var child in link)
             {
@@ -468,39 +468,39 @@ public sealed class TelegramMarkdownRenderer
             {
                 _output.Append("Image");
             }
-            _output.Append($"]({EscapeLinkUrl(link.Url ?? "")})");
+            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? string.Empty)})");
         }
         else
         {
-            _output.Append("[");
+            _output.Append('[');
             foreach (var child in link)
             {
                 RenderInline(child, true);
             }
-            _output.Append($"]({EscapeLinkUrl(link.Url ?? "")})");
+            _output.Append(CultureInfo.InvariantCulture, $"]({EscapeLinkUrl(link.Url ?? string.Empty)})");
         }
     }
 
     private void RenderHtmlInline(HtmlInline html)
     {
         string tag = html.Tag;
-        switch (tag.ToLower())
+        switch (tag.ToLowerInvariant())
         {
             case "b":
             case "strong":
-                _output.Append("*");
+                _output.Append('*');
                 break;
             case "/b":
             case "/strong":
-                _output.Append("*");
+                _output.Append('*');
                 break;
             case "i":
             case "em":
-                _output.Append("_");
+                _output.Append("\u200B_\u200B");
                 break;
             case "/i":
             case "/em":
-                _output.Append("_");
+                _output.Append("\u200B_\u200B");
                 break;
             case "u":
                 _output.Append("__");
@@ -510,17 +510,17 @@ public sealed class TelegramMarkdownRenderer
                 break;
             case "s":
             case "strike":
-                _output.Append("~");
+                _output.Append('~');
                 break;
             case "/s":
             case "/strike":
-                _output.Append("~");
+                _output.Append('~');
                 break;
             case "code":
-                _output.Append("`");
+                _output.Append('`');
                 break;
             case "/code":
-                _output.Append("`");
+                _output.Append('`');
                 break;
             default:
                 // Ignore other HTML tags
@@ -528,14 +528,14 @@ public sealed class TelegramMarkdownRenderer
         }
     }
 
-    private string EscapeText(string text)
+    private static string EscapeText(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
         var result = new StringBuilder();
         foreach (char c in text)
         {
-            if (_specialChars.Contains(c) || c == '\\')
+            if (SpecialChars.Contains(c) || c == '\\')
             {
                 result.Append('\\');
             }
@@ -544,18 +544,18 @@ public sealed class TelegramMarkdownRenderer
         return result.ToString();
     }
 
-    private string EscapeCodeContent(string text)
+    private static string EscapeCodeContent(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
-        return text.Replace("\\", "\\\\").Replace("`", "\\`");
+        return text.Replace("\\", @"\\", StringComparison.Ordinal).Replace("`", "\\`", StringComparison.Ordinal);
     }
 
-    private string EscapeLinkUrl(string url)
+    private static string EscapeLinkUrl(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
 
-        return url.Replace("\\", "\\\\").Replace(")", "\\)");
+        return url.Replace("\\", @"\\", StringComparison.Ordinal).Replace(")", "\\)", StringComparison.Ordinal);
     }
 
     private string GetPlainText(Inline inline)
