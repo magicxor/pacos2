@@ -281,7 +281,7 @@ public sealed class TelegramMarkdownRenderer
 
                 // Split the content by lines and add > prefix to each
                 string paraContent = paraRenderer._output.ToString().Trim();
-                string[] lines = paraContent.Split('\n', StringSplitOptions.None);
+                string[] lines = paraContent.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
                 foreach (string line in lines)
                 {
                     _output.AppendLine(">" + line);
@@ -293,7 +293,7 @@ public sealed class TelegramMarkdownRenderer
                 var blockRenderer = new TelegramMarkdownRenderer();
                 blockRenderer.RenderBlock(block);
                 string blockContent = blockRenderer._output.ToString();
-                string[] lines = blockContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                string[] lines = blockContent.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
                 foreach (string line in lines)
                 {
                     _output.AppendLine(">" + line);
