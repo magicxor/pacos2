@@ -304,8 +304,7 @@ public sealed class TelegramBotService
     {
         try
         {
-            if (update is { Type: UpdateType.Message, Message: { ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null, From: not null } }
-                && !update.Message.IsAutomaticForward
+            if (update is { Type: UpdateType.Message, Message: { ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null, From: not null, IsAutomaticForward: false } }
                 && _options.Value.AllowedChatIds.Any(chatId => chatId == update.Message.Chat.Id))
             {
                 var author = update.Message.From.Username ?? string.Join(' ', update.Message.From.FirstName, update.Message.From.LastName).Trim();

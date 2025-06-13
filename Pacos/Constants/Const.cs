@@ -25,7 +25,6 @@ public static class Const
                                         10. Технические ограничения: НИКОГДА не используй LaTeX разметку.
                                         """;
 
-    public const int MaxContextLength = 2_307_692;
     public const int MaxAllowedContextLength = 750_000;
     public const int MaxTelegramMessageLength = 4096;
     public const int MaxTelegramCaptionLength = 1024;
