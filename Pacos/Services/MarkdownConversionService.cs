@@ -8,8 +8,6 @@ public sealed class MarkdownConversionService
     private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
         .UseMdExtensions()
         .Build();
-    private static readonly TelegramMarkdownRenderer TelegramMarkdownRenderer = new();
-
     private readonly ILogger<MarkdownConversionService> _logger;
 
     public MarkdownConversionService(
@@ -22,6 +20,6 @@ public sealed class MarkdownConversionService
     {
         _logger.LogDebug("Converting normal markdown to Telegram markdown: {NormalMarkdown}", normalMarkdown);
         var document = Markdown.Parse(normalMarkdown, MarkdownPipeline);
-        return TelegramMarkdownRenderer.Render(document);
+        return new TelegramMarkdownRenderer().Render(document);
     }
 }

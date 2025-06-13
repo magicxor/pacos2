@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Frozen;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Markdig.Extensions.Tables;
@@ -9,8 +10,9 @@ namespace Pacos.Services;
 
 public sealed class TelegramMarkdownRenderer
 {
+    private static readonly FrozenSet<char> SpecialChars = new HashSet<char> { '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' }.ToFrozenSet();
+
     private readonly StringBuilder _output = new();
-    private readonly HashSet<char> _specialChars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
 
     public string Render(MarkdownDocument document)
     {
@@ -533,7 +535,7 @@ public sealed class TelegramMarkdownRenderer
         var result = new StringBuilder();
         foreach (char c in text)
         {
-            if (_specialChars.Contains(c) || c == '\\')
+            if (SpecialChars.Contains(c) || c == '\\')
             {
                 result.Append('\\');
             }
