@@ -1,0 +1,12 @@
+﻿*Task List Test*
+
+\- \[x\]  Completed task
+\- \[ \]  Uncompleted task
+• Regular bullet item
+
+*Nested Lists*
+
+• Regular item
+  \- \[x\]  Nested completed task
+  \- \[ \]  Nested uncompleted task
+  • Regular nested item
