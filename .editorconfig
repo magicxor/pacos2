@@ -333,6 +333,9 @@ dotnet_diagnostic.CA1819.severity = suggestion
 # SA1513: Closing brace should be followed by blank line
 dotnet_diagnostic.SA1513.severity = none
 
+# SS018: Missing enum member in switched cases.
+dotnet_diagnostic.SS018.severity = none
+
 # ReSharper
 resharper_redundant_type_declaration_body_highlighting = none
 
