@@ -496,11 +496,11 @@ public sealed class TelegramMarkdownRenderer
                 break;
             case "i":
             case "em":
-                _output.Append('_');
+                _output.Append("\u200B_\u200B");
                 break;
             case "/i":
             case "/em":
-                _output.Append('_');
+                _output.Append("\u200B_\u200B");
                 break;
             case "u":
                 _output.Append("__");
@@ -528,7 +528,7 @@ public sealed class TelegramMarkdownRenderer
         }
     }
 
-    private string EscapeText(string text)
+    private static string EscapeText(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
