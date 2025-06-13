@@ -4,6 +4,8 @@ Pacos is a .NET-based Telegram bot designed to interact in group chats. It lever
 
 *The alpaca was scientifically described by Carl Linnaeus in his System of Nature (1758) under the Latin name Camelus pacos.*
 
+![scr1](https://user-images.githubusercontent.com/8275793/231939658-5b52f5c3-2dba-4313-9756-4d8b16d14627.jpg)
+
 ## Features
 
 - **AI-Powered Chat**: Responds to mentions (e.g., "pacos", "пакос") or direct messages using Google's Gemini Pro model. It maintains a chat history for context-aware conversations.
