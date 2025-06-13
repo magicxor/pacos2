@@ -12,6 +12,14 @@ internal sealed class TelegramMarkdownRendererTests
         .UseMdExtensions()
         .Build();
 
+    private static readonly VerifySettings VerifySettings = new();
+
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
+        // VerifySettings.DisableDiff();
+    }
+
     [Test]
     public void Render_WhenDocumentIsEmpty_ShouldReturnEmptyString()
     {
@@ -42,7 +50,7 @@ internal sealed class TelegramMarkdownRendererTests
         var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
         var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
 
-        await Verify(actualTelegramMarkdown);
+        await Verify(actualTelegramMarkdown, VerifySettings);
     }
 
     [Test]
@@ -53,7 +61,7 @@ internal sealed class TelegramMarkdownRendererTests
         var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
         var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
 
-        await Verify(actualTelegramMarkdown);
+        await Verify(actualTelegramMarkdown, VerifySettings);
     }
 
     [Test]
@@ -64,7 +72,7 @@ internal sealed class TelegramMarkdownRendererTests
         var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
         var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
 
-        await Verify(actualTelegramMarkdown);
+        await Verify(actualTelegramMarkdown, VerifySettings);
     }
 
     [Test]
@@ -75,7 +83,7 @@ internal sealed class TelegramMarkdownRendererTests
         var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
         var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
 
-        await Verify(actualTelegramMarkdown);
+        await Verify(actualTelegramMarkdown, VerifySettings);
     }
 
     [Test]
@@ -86,6 +94,6 @@ internal sealed class TelegramMarkdownRendererTests
         var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
         var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
 
-        await Verify(actualTelegramMarkdown);
+        await Verify(actualTelegramMarkdown, VerifySettings);
     }
 }
