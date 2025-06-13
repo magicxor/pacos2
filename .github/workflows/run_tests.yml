@@ -9,7 +9,7 @@ on:
       environment:
         type: string
         description: environment
-        required: true
+        required: false
 
 name: reusable test runner
 
@@ -17,7 +17,6 @@ jobs:
   run_tests:
     name: run tests
     runs-on: ubuntu-24.04
-    environment: ${{ inputs.environment }}
     strategy:
       matrix:
         dotnet: [
@@ -50,8 +49,7 @@ jobs:
 
     - name: Copy config
       env:
-        MCP_JSON_CONTENT: ${{ secrets.MCP }}
-        BANWORDS_CONTENT: ${{ vars.BANWORDS }}
+        BANWORDS_CONTENT: test
       run: |
         printf "%s" "$BANWORDS_CONTENT" > ./${{ env.MAIN_PROJECT_DIR }}/banwords.txt
 
