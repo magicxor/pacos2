@@ -55,7 +55,7 @@ public sealed class GenerativeModelService
         _logger = logger;
     }
 
-    public async Task<(byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
+    public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
     {
         try
         {
@@ -79,23 +79,23 @@ public sealed class GenerativeModelService
                     if (imagePart != null)
                     {
                         _logger.LogInformation("Successfully generated image from text prompt: {Prompt}", prompt);
-                        return (Convert.FromBase64String(imagePart.InlineData?.Data ?? string.Empty), imagePart.InlineData?.MimeType, null);
+                        return (response.Text, Convert.FromBase64String(imagePart.InlineData?.Data ?? string.Empty), imagePart.InlineData?.MimeType, null);
                     }
 
                     _logger.LogWarning("No image part found in response for text prompt: {Prompt}. Response text: {Text}", prompt, response.Text);
                 }
             }
 
-            return (null, null, "Could not extract image from the response. The model might not have generated one.");
+            return (response.Text, null, null, "Could not extract image from the response. The model might not have generated one.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during text-to-image generation for prompt: {Prompt}", prompt);
-            return (null, null, $"An error occurred while generating the image: {ex.Message}");
+            return (null, null, null, $"An error occurred while generating the image: {ex.Message}");
         }
     }
 
-    public async Task<(byte[]? imageData, string? mimeType, string? errorMessage)> GenerateImageToImageAsync(string prompt, byte[] inputImageBytes, string mimeType)
+    public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateImageToImageAsync(string prompt, byte[] inputImageBytes, string mimeType)
     {
         try
         {
@@ -129,19 +129,19 @@ public sealed class GenerativeModelService
                     if (outputImagePart != null)
                     {
                         _logger.LogInformation("Successfully generated image from image input with prompt: {Prompt}", prompt);
-                        return (Convert.FromBase64String(outputImagePart.InlineData?.Data ?? string.Empty), outputImagePart.InlineData?.MimeType, null);
+                        return (response.Text, Convert.FromBase64String(outputImagePart.InlineData?.Data ?? string.Empty), outputImagePart.InlineData?.MimeType, null);
                     }
 
                     _logger.LogWarning("No output image part found in image-to-image response for prompt: {Prompt}. Response text: {Text}", prompt, response.Text);
                 }
             }
 
-            return (null, null, "Could not extract modified image from the response. The model might not have generated one.");
+            return (response.Text, null, null, "Could not extract modified image from the response. The model might not have generated one.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during image-to-image generation for prompt: {Prompt}", prompt);
-            return (null, null, $"An error occurred while processing the image: {ex.Message}");
+            return (null, null, null, $"An error occurred while processing the image: {ex.Message}");
         }
     }
 }
