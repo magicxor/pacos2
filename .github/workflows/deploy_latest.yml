@@ -48,4 +48,7 @@ jobs:
               -e Pacos__AllowedLanguageCodes__1='${{ vars.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
               -e Pacos__ChatModel='${{ vars.PACOS__CHATMODEL }}' \
               -e Pacos__ImageGenerationModel='${{ vars.PACOS__IMAGEGENERATIONMODEL }}' \
+              -e Pacos__WebProxy='${{ secrets.PACOS__WEBPROXY }}' \
+              -e Pacos__WebProxyLogin='${{ secrets.PACOS__WEBPROXYLOGIN }}' \
+              -e Pacos__WebProxyPassword='${{ secrets.PACOS__WEBPROXYPASSWORD }}' \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}

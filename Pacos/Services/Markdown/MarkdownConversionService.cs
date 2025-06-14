@@ -1,7 +1,7 @@
 ﻿using Markdig;
 using Pacos.Extensions;
 
-namespace Pacos.Services;
+namespace Pacos.Services.Markdown;
 
 public sealed class MarkdownConversionService
 {
@@ -19,7 +19,7 @@ public sealed class MarkdownConversionService
     public string ConvertToTelegramMarkdown(string normalMarkdown)
     {
         _logger.LogDebug("Converting normal markdown to Telegram markdown: {NormalMarkdown}", normalMarkdown);
-        var document = Markdown.Parse(normalMarkdown, MarkdownPipeline);
+        var document = Markdig.Markdown.Parse(normalMarkdown, MarkdownPipeline);
         return new TelegramMarkdownRenderer().Render(document);
     }
 }

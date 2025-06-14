@@ -24,4 +24,13 @@ public sealed class PacosOptions
 
     [Required]
     public required string ImageGenerationModel { get; set; }
+
+    [Required]
+    public required string WebProxy { get; set; }
+
+    [Required]
+    public required string WebProxyLogin { get; set; }
+
+    [Required]
+    public required string WebProxyPassword { get; set; }
 }

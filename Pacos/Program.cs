@@ -1,3 +1,4 @@
+using System.Net;
 using GenerativeAI.Microsoft;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,9 @@ using Pacos.Enums;
 using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
+using Pacos.Services.ChatCommandHandlers;
+using Pacos.Services.GenerativeAi;
+using Pacos.Services.Markdown;
 using Telegram.Bot;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -52,6 +56,35 @@ public sealed class Program
                     .AddDefaultLogger()
                     .AddStandardResilienceHandler();
 
+                services.AddHttpClient(nameof(HttpClientType.GoogleCloudImageGeneration))
+                    .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
+                    {
+                        var webProxy = new WebProxy(
+                            Address: serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy,
+                            BypassOnLocal: true,
+                            BypassList: null,
+                            Credentials: new NetworkCredential(
+                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin,
+                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword));
+
+                        switch (handler)
+                        {
+                            case SocketsHttpHandler socketsHttpHandler:
+                                socketsHttpHandler.Proxy = webProxy;
+                                break;
+                            case HttpClientHandler httpClientHandler:
+                                httpClientHandler.Proxy = webProxy;
+                                break;
+                            default:
+                                serviceProvider.GetService<ILogger<IHttpClientBuilder>>()?.LogWarning(
+                                    "Unknown HttpMessageHandler type: {HandlerType}. Proxy will not be set",
+                                    handler.GetType().FullName);
+                                break;
+                        }
+                    })
+                    .AddDefaultLogger()
+                    .AddStandardResilienceHandler();
+
                 var bannedWords = File.Exists(BanWordsFileName)
                     ? File.ReadAllLines(BanWordsFileName)
                     : [];
@@ -85,7 +118,10 @@ public sealed class Program
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
                 services.AddSingleton<ChatService>();
-                services.AddSingleton<GenerativeModelService>();
+                services.AddSingleton<ImageGenerationService>();
+                services.AddSingleton<DrawHandler>();
+                services.AddSingleton<ResetHandler>();
+                services.AddSingleton<MentionHandler>();
                 services.AddSingleton<TelegramBotService>();
                 services.AddHostedService<Worker>();
             })

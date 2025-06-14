@@ -1,58 +1,70 @@
-using Microsoft.Extensions.Options;
-using Pacos.Models.Options;
 using GenerativeAI;
 using GenerativeAI.Types;
+using Microsoft.Extensions.Options;
+using Pacos.Enums;
+using Pacos.Models.Options;
 
-namespace Pacos.Services;
+namespace Pacos.Services.GenerativeAi;
 
-public sealed class GenerativeModelService
+public sealed class ImageGenerationService
 {
     private readonly IOptions<PacosOptions> _options;
-    private readonly ILogger<GenerativeModelService> _logger;
+    private readonly ILogger<ImageGenerationService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    private static List<SafetySetting> GetImgSafetySettings()
-    {
-        return
-        [
-            new()
-            {
-                Category = HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                Threshold = HarmBlockThreshold.OFF,
-            },
+    private static readonly List<SafetySetting> ImgSafetySettings =
+    [
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            Threshold = HarmBlockThreshold.OFF,
+        },
 
-            new()
-            {
-                Category = HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                Threshold = HarmBlockThreshold.OFF,
-            },
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
 
-            new()
-            {
-                Category = HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                Threshold = HarmBlockThreshold.OFF,
-            },
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
 
-            new()
-            {
-                Category = HarmCategory.HARM_CATEGORY_HARASSMENT,
-                Threshold = HarmBlockThreshold.OFF,
-            },
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_HARASSMENT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
 
-            new()
-            {
-                Category = HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
-                Threshold = HarmBlockThreshold.OFF,
-            },
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+            Threshold = HarmBlockThreshold.OFF,
+        },
 
-        ];
-    }
+    ];
 
-    public GenerativeModelService(
+    public ImageGenerationService(
         IOptions<PacosOptions> options,
-        ILogger<GenerativeModelService> logger)
+        ILogger<ImageGenerationService> logger,
+        IHttpClientFactory httpClientFactory)
     {
         _options = options;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
+    }
+
+    private GenerativeModel CreateGenerativeModel()
+    {
+        return new GenerativeModel(
+            apiKey: _options.Value.GoogleCloudApiKey,
+            model: _options.Value.ImageGenerationModel,
+            new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
+            ImgSafetySettings,
+            httpClient: _httpClientFactory.CreateClient(nameof(HttpClientType.GoogleCloudImageGeneration)),
+            logger: _logger);
     }
 
     public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
@@ -62,11 +74,8 @@ public sealed class GenerativeModelService
             _logger.LogInformation("Attempting text-to-image generation for prompt: {Prompt}", prompt);
 
             var fullPrompt = $"Generate an image of: {prompt}";
-            var generativeModel = new GenerativeModel(
-                apiKey: _options.Value.GoogleCloudApiKey,
-                model: _options.Value.ImageGenerationModel,
-                new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
-                GetImgSafetySettings());
+
+            var generativeModel = CreateGenerativeModel();
             var response = await generativeModel.GenerateContentAsync(fullPrompt);
 
             if (response.Candidates is { Length: > 0 })
@@ -113,11 +122,7 @@ public sealed class GenerativeModelService
 
             var contentParts = new List<Part> { imagePartContent, textPartContent };
 
-            var generativeModel = new GenerativeModel(
-                apiKey: _options.Value.GoogleCloudApiKey,
-                model: _options.Value.ImageGenerationModel,
-                new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
-                GetImgSafetySettings());
+            var generativeModel = CreateGenerativeModel();
             var response = await generativeModel.GenerateContentAsync(contentParts.ToArray());
 
             if (response.Candidates is { Length: > 0 })
