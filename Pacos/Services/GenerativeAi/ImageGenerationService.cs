@@ -1,15 +1,15 @@
-using Microsoft.Extensions.Options;
-using Pacos.Models.Options;
 using GenerativeAI;
 using GenerativeAI.Types;
+using Microsoft.Extensions.Options;
 using Pacos.Enums;
+using Pacos.Models.Options;
 
-namespace Pacos.Services;
+namespace Pacos.Services.GenerativeAi;
 
-public sealed class GenerativeModelService
+public sealed class ImageGenerationService
 {
     private readonly IOptions<PacosOptions> _options;
-    private readonly ILogger<GenerativeModelService> _logger;
+    private readonly ILogger<ImageGenerationService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
     private static List<SafetySetting> GetImgSafetySettings()
@@ -49,9 +49,9 @@ public sealed class GenerativeModelService
         ];
     }
 
-    public GenerativeModelService(
+    public ImageGenerationService(
         IOptions<PacosOptions> options,
-        ILogger<GenerativeModelService> logger,
+        ILogger<ImageGenerationService> logger,
         IHttpClientFactory httpClientFactory)
     {
         _options = options;

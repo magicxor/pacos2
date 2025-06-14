@@ -10,6 +10,8 @@ using Pacos.Enums;
 using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
+using Pacos.Services.GenerativeAi;
+using Pacos.Services.Markdown;
 using Telegram.Bot;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -115,7 +117,7 @@ public sealed class Program
                 services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
                 services.AddSingleton<ChatService>();
-                services.AddSingleton<GenerativeModelService>();
+                services.AddSingleton<ImageGenerationService>();
                 services.AddSingleton<TelegramBotService>();
                 services.AddHostedService<Worker>();
             })
