@@ -1,3 +1,4 @@
+using System.Net;
 using GenerativeAI.Microsoft;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
@@ -49,6 +50,35 @@ public sealed class Program
                     .ValidateOnStart();
 
                 services.AddHttpClient(nameof(HttpClientType.Telegram))
+                    .AddDefaultLogger()
+                    .AddStandardResilienceHandler();
+
+                services.AddHttpClient(nameof(HttpClientType.GoogleCloudImageGeneration))
+                    .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
+                    {
+                        var webProxy = new WebProxy(
+                            Address: serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy,
+                            BypassOnLocal: true,
+                            BypassList: null,
+                            Credentials: new NetworkCredential(
+                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin,
+                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword));
+
+                        switch (handler)
+                        {
+                            case SocketsHttpHandler socketsHttpHandler:
+                                socketsHttpHandler.Proxy = webProxy;
+                                break;
+                            case HttpClientHandler httpClientHandler:
+                                httpClientHandler.Proxy = webProxy;
+                                break;
+                            default:
+                                serviceProvider.GetService<ILogger<IHttpClientBuilder>>()?.LogWarning(
+                                    "Unknown HttpMessageHandler type: {HandlerType}. Proxy will not be set",
+                                    handler.GetType().FullName);
+                                break;
+                        }
+                    })
                     .AddDefaultLogger()
                     .AddStandardResilienceHandler();
 
