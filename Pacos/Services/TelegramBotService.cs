@@ -105,13 +105,13 @@ public sealed class TelegramBotService
                 _ => "image/jpeg",
             };
 
-            var (generatedImageData, generatedImageMime, error) = await _generativeModelService.GenerateImageToImageAsync(prompt, imageBytes, mimeType);
+            var (replyText, generatedImageData, generatedImageMime, error) = await _generativeModelService.GenerateImageToImageAsync(prompt, imageBytes, mimeType);
             if (generatedImageData != null)
             {
                 await botClient.SendPhoto(
                     chatId: updateMessage.Chat.Id,
                     photo: new InputFileStream(new MemoryStream(generatedImageData), "generated_image.png"),
-                    caption: prompt.Cut(Const.MaxTelegramCaptionLength),
+                    caption: replyText?.Cut(Const.MaxTelegramCaptionLength),
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId }, // Always reply to the command message ID
                     cancellationToken: cancellationToken);
                 _logger.LogInformation("Sent image-to-image result (photo from {PhotoSourceContext}) to {Author}", photoSourceMessageContext, author);
@@ -120,7 +120,7 @@ public sealed class TelegramBotService
             {
                 await botClient.SendMessage(
                     chatId: updateMessage.Chat.Id,
-                    text: $"Sorry, couldn't generate image from image (photo from {photoSourceMessageContext}): {error}",
+                    text: !string.IsNullOrWhiteSpace(replyText) ? replyText : $"Sorry, couldn't generate image from image (photo from {photoSourceMessageContext}): {error}",
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId },
                     cancellationToken: cancellationToken);
                 _logger.LogWarning("Failed image-to-image for {Author} (photo from {PhotoSourceContext}): {Error}", author, photoSourceMessageContext, error);
@@ -140,13 +140,13 @@ public sealed class TelegramBotService
                 return;
             }
 
-            var (generatedImageData, generatedImageMime, error) = await _generativeModelService.GenerateTextToImageAsync(prompt);
+            var (replyText, generatedImageData, generatedImageMime, error) = await _generativeModelService.GenerateTextToImageAsync(prompt);
             if (generatedImageData != null)
             {
                 await botClient.SendPhoto(
                     chatId: updateMessage.Chat.Id,
                     photo: new InputFileStream(new MemoryStream(generatedImageData), "generated_image.png"),
-                    caption: prompt.Cut(Const.MaxTelegramCaptionLength),
+                    caption: replyText?.Cut(Const.MaxTelegramCaptionLength),
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId },
                     cancellationToken: cancellationToken);
                 _logger.LogInformation("Sent text-to-image result to {Author}", author);
@@ -155,7 +155,7 @@ public sealed class TelegramBotService
             {
                 await botClient.SendMessage(
                     chatId: updateMessage.Chat.Id,
-                    text: $"Sorry, couldn't generate image from text: {error}",
+                    text: !string.IsNullOrWhiteSpace(replyText) ? replyText : $"Sorry, couldn't generate image from text: {error}",
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId },
                     cancellationToken: cancellationToken);
                 _logger.LogWarning("Failed text-to-image for {Author}: {Error}", author, error);
