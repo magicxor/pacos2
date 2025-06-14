@@ -24,4 +24,7 @@ public sealed class PacosOptions
 
     [Required]
     public required string ImageGenerationModel { get; set; }
+
+    [Required]
+    public required string ApiVersion { get; set; }
 }
