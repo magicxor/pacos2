@@ -59,6 +59,18 @@ public sealed class GenerativeModelService
         _generativeAiService = generativeAiService;
     }
 
+    private IGenerativeModel CreateConfiguredGenerativeModel(string imageGenerationModel)
+    {
+        var generativeModel = _generativeAiService.CreateInstance(imageGenerationModel);
+        if (generativeModel is GenerativeModel generativeModelConfigurable)
+        {
+            generativeModelConfigurable.Config = new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] };
+            generativeModelConfigurable.SafetySettings = GetImgSafetySettings();
+        }
+
+        return generativeModel;
+    }
+
     public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
     {
         try
@@ -115,12 +127,7 @@ public sealed class GenerativeModelService
 
             var contentParts = new List<Part> { imagePartContent, textPartContent };
 
-            var generativeModel = _generativeAiService.CreateInstance(_options.Value.ImageGenerationModel);
-            if (generativeModel is GenerativeModel generativeModelConfigurable)
-            {
-                generativeModelConfigurable.Config = new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] };
-                generativeModelConfigurable.SafetySettings = GetImgSafetySettings();
-            }
+            var generativeModel = CreateConfiguredGenerativeModel(_options.Value.ImageGenerationModel);
 
             var response = await generativeModel.GenerateContentAsync(contentParts.ToArray());
 
