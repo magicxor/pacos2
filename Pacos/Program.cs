@@ -10,6 +10,7 @@ using Pacos.Enums;
 using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
+using Pacos.Services.ChatCommandHandlers;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
 using Telegram.Bot;
@@ -118,6 +119,9 @@ public sealed class Program
                 services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
                 services.AddSingleton<ChatService>();
                 services.AddSingleton<ImageGenerationService>();
+                services.AddSingleton<DrawHandler>();
+                services.AddSingleton<ResetHandler>();
+                services.AddSingleton<MentionHandler>();
                 services.AddSingleton<TelegramBotService>();
                 services.AddHostedService<Worker>();
             })
