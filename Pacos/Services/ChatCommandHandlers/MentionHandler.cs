@@ -11,7 +11,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Pacos.Services.ChatCommandHandlers;
 
-public class MentionHandler
+public sealed class MentionHandler
 {
     private readonly ILogger<MentionHandler> _logger;
     private readonly IOptions<PacosOptions> _options;

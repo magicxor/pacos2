@@ -53,8 +53,6 @@ jobs:
           push: true
           context: .
           file: ./${{ env.MAIN_PROJECT_DIR }}/Dockerfile
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: |
             ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}
           platforms: |
