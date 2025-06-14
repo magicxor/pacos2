@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace Pacos.Services.ChatCommandHandlers;
 
-public class DrawHandler
+public sealed class DrawHandler
 {
     private readonly ILogger<DrawHandler> _logger;
     private readonly ImageGenerationService _imageGenerationService;

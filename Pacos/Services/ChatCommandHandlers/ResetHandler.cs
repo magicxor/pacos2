@@ -5,7 +5,7 @@ using Telegram.Bot.Types;
 
 namespace Pacos.Services.ChatCommandHandlers;
 
-public class ResetHandler
+public sealed class ResetHandler
 {
     private readonly ILogger<ResetHandler> _logger;
     private readonly ChatService _chatService;

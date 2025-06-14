@@ -1,7 +1,7 @@
 namespace Pacos.Tests.Unit;
 
 [TestFixture]
-public class VerifyChecksTests
+public sealed class VerifyChecksTests
 {
     [Test]
     public Task Run() =>
