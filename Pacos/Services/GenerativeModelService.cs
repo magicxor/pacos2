@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 using Pacos.Models.Options;
 using GenerativeAI;
 using GenerativeAI.Types;
-using GenerativeAI.Web;
+using Pacos.Enums;
 
 namespace Pacos.Services;
 
@@ -10,7 +10,7 @@ public sealed class GenerativeModelService
 {
     private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<GenerativeModelService> _logger;
-    private readonly IGenerativeAiService _generativeAiService;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     private static List<SafetySetting> GetImgSafetySettings()
     {
@@ -52,23 +52,22 @@ public sealed class GenerativeModelService
     public GenerativeModelService(
         IOptions<PacosOptions> options,
         ILogger<GenerativeModelService> logger,
-        IGenerativeAiService generativeAiService)
+        IHttpClientFactory httpClientFactory)
     {
         _options = options;
         _logger = logger;
-        _generativeAiService = generativeAiService;
+        _httpClientFactory = httpClientFactory;
     }
 
-    private IGenerativeModel CreateConfiguredGenerativeModel(string imageGenerationModel)
+    private GenerativeModel CreateGenerativeModel()
     {
-        var generativeModel = _generativeAiService.CreateInstance(imageGenerationModel);
-        if (generativeModel is GenerativeModel generativeModelConfigurable)
-        {
-            generativeModelConfigurable.Config = new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] };
-            generativeModelConfigurable.SafetySettings = GetImgSafetySettings();
-        }
-
-        return generativeModel;
+        return new GenerativeModel(
+            apiKey: _options.Value.GoogleCloudApiKey,
+            model: _options.Value.ImageGenerationModel,
+            new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
+            GetImgSafetySettings(),
+            httpClient: _httpClientFactory.CreateClient(nameof(HttpClientType.GoogleCloudImageGeneration)),
+            logger: _logger);
     }
 
     public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
@@ -79,8 +78,7 @@ public sealed class GenerativeModelService
 
             var fullPrompt = $"Generate an image of: {prompt}";
 
-            var generativeModel = CreateConfiguredGenerativeModel(_options.Value.ImageGenerationModel);
-
+            var generativeModel = CreateGenerativeModel();
             var response = await generativeModel.GenerateContentAsync(fullPrompt);
 
             if (response.Candidates is { Length: > 0 })
@@ -127,8 +125,7 @@ public sealed class GenerativeModelService
 
             var contentParts = new List<Part> { imagePartContent, textPartContent };
 
-            var generativeModel = CreateConfiguredGenerativeModel(_options.Value.ImageGenerationModel);
-
+            var generativeModel = CreateGenerativeModel();
             var response = await generativeModel.GenerateContentAsync(contentParts.ToArray());
 
             if (response.Candidates is { Length: > 0 })

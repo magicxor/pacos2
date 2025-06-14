@@ -3,4 +3,5 @@
 public enum HttpClientType
 {
     Telegram,
+    GoogleCloudImageGeneration,
 }

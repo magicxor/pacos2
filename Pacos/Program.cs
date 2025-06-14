@@ -1,6 +1,5 @@
-using GenerativeAI;
+using System.Net;
 using GenerativeAI.Microsoft;
-using GenerativeAI.Web;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -8,7 +7,6 @@ using NLog.Config;
 using NLog.Extensions.Logging;
 using NTextCat;
 using Pacos.Enums;
-using Pacos.Extensions;
 using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
@@ -55,12 +53,38 @@ public sealed class Program
                     .AddDefaultLogger()
                     .AddStandardResilienceHandler();
 
+                services.AddHttpClient(nameof(HttpClientType.GoogleCloudImageGeneration))
+                    .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
+                    {
+                        var webProxy = new WebProxy(
+                            Address: serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy,
+                            BypassOnLocal: true,
+                            BypassList: null,
+                            Credentials: new NetworkCredential(
+                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin,
+                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword));
+
+                        switch (handler)
+                        {
+                            case SocketsHttpHandler socketsHttpHandler:
+                                socketsHttpHandler.Proxy = webProxy;
+                                break;
+                            case HttpClientHandler httpClientHandler:
+                                httpClientHandler.Proxy = webProxy;
+                                break;
+                            default:
+                                serviceProvider.GetService<ILogger<IHttpClientBuilder>>()?.LogWarning(
+                                    "Unknown HttpMessageHandler type: {HandlerType}. Proxy will not be set",
+                                    handler.GetType().FullName);
+                                break;
+                        }
+                    })
+                    .AddDefaultLogger()
+                    .AddStandardResilienceHandler();
+
                 var bannedWords = File.Exists(BanWordsFileName)
                     ? File.ReadAllLines(BanWordsFileName)
                     : [];
-                var imageGenerationModel = hostContext.Configuration.GetImageGenerationModel() ?? GoogleAIModels.Gemini2FlashExpImageGeneration;
-                var googleCloudApiKey = hostContext.Configuration.GetGoogleCloudApiKey() ?? throw new InvalidOperationException("Google Cloud API key is not configured.");
-                var apiVersion = hostContext.Configuration.GetApiVersion() ?? ApiVersions.v1;
 
                 services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
@@ -69,12 +93,6 @@ public sealed class Program
                     ));
                 services.AddHostedService<QueuedHostedService>();
                 services.AddSingleton<MarkdownConversionService>();
-                services.AddGenerativeAI(x =>
-                {
-                    x.ApiVersion = apiVersion;
-                    x.Model = imageGenerationModel;
-                    x.Credentials = new GoogleAICredentials(googleCloudApiKey);
-                });
                 services.AddSingleton<IChatClient>(s =>
                 {
                     var loggerFactory = s.GetRequiredService<ILoggerFactory>();
