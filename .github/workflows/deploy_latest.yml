@@ -48,5 +48,4 @@ jobs:
               -e Pacos__AllowedLanguageCodes__1='${{ vars.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
               -e Pacos__ChatModel='${{ vars.PACOS__CHATMODEL }}' \
               -e Pacos__ImageGenerationModel='${{ vars.PACOS__IMAGEGENERATIONMODEL }}' \
-              -e Pacos__ApiVersion='${{ vars.PACOS__APIVERSION }}' \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE }}:${{ inputs.tag }}
