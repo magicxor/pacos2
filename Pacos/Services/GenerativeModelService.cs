@@ -67,12 +67,7 @@ public sealed class GenerativeModelService
 
             var fullPrompt = $"Generate an image of: {prompt}";
 
-            var generativeModel = _generativeAiService.CreateInstance(_options.Value.ImageGenerationModel);
-            if (generativeModel is GenerativeModel generativeModelConfigurable)
-            {
-                generativeModelConfigurable.Config = new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] };
-                generativeModelConfigurable.SafetySettings = GetImgSafetySettings();
-            }
+            var generativeModel = CreateConfiguredGenerativeModel(_options.Value.ImageGenerationModel);
 
             var response = await generativeModel.GenerateContentAsync(fullPrompt);
 
