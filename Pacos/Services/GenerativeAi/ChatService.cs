@@ -3,7 +3,7 @@ using System.Globalization;
 using Microsoft.Extensions.AI;
 using Pacos.Constants;
 
-namespace Pacos.Services;
+namespace Pacos.Services.GenerativeAi;
 
 public sealed class ChatService : IDisposable
 {

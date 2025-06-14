@@ -6,7 +6,7 @@ using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-namespace Pacos.Services;
+namespace Pacos.Services.Markdown;
 
 public sealed class TelegramMarkdownRenderer
 {

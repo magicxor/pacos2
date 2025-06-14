@@ -6,7 +6,7 @@ using ModelContextProtocol.Client;
 using Pacos.Enums;
 using Pacos.Models;
 
-namespace Pacos.Services;
+namespace Pacos.Services.Mcp;
 
 public sealed class McpProvider
 {
