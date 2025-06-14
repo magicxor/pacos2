@@ -61,7 +61,7 @@ public sealed class ImageGenerationService
         return new GenerativeModel(
             apiKey: _options.Value.GoogleCloudApiKey,
             model: _options.Value.ImageGenerationModel,
-            new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT], MediaResolution = MediaResolution.MEDIA_RESOLUTION_HIGH },
+            new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
             ImgSafetySettings,
             httpClient: _httpClientFactory.CreateClient(nameof(HttpClientType.GoogleCloudImageGeneration)),
             logger: _logger);
