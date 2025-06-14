@@ -11,7 +11,7 @@ public sealed class ChatService : IDisposable
     private readonly IChatClient _chatClient;
     private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<long, List<ChatMessage>> _chatHistories = new();
-    private readonly SemaphoreSlim _semaphoreSlim = new(initialCount: 1, maxCount: 1);
+    private readonly ConcurrentDictionary<long, SemaphoreSlim> _chatSemaphores = new();
 
     public ChatService(
         ILogger<ChatService> logger,
@@ -30,6 +30,11 @@ public sealed class ChatService : IDisposable
             Const.SystemPrompt + Environment.NewLine + Environment.NewLine + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}");
     }
 
+    private SemaphoreSlim GetOrCreateChatSemaphore(long chatId)
+    {
+        return _chatSemaphores.GetOrAdd(chatId, _ => new SemaphoreSlim(initialCount: 1, maxCount: 1));
+    }
+
     public async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetResponseAsync(
         long chatId,
         long messageId,
@@ -38,7 +43,8 @@ public sealed class ChatService : IDisposable
         byte[]? fileBytes = null,
         string? fileMimeType = null)
     {
-        await _semaphoreSlim.WaitAsync();
+        var chatSemaphore = GetOrCreateChatSemaphore(chatId);
+        await chatSemaphore.WaitAsync();
 
         try
         {
@@ -99,13 +105,14 @@ public sealed class ChatService : IDisposable
         }
         finally
         {
-            _semaphoreSlim.Release();
+            chatSemaphore.Release();
         }
     }
 
     public async Task ResetChatHistoryAsync(long chatId)
     {
-        await _semaphoreSlim.WaitAsync();
+        var chatSemaphore = GetOrCreateChatSemaphore(chatId);
+        await chatSemaphore.WaitAsync();
 
         try
         {
@@ -120,13 +127,19 @@ public sealed class ChatService : IDisposable
         }
         finally
         {
-            _semaphoreSlim.Release();
+            chatSemaphore.Release();
         }
     }
 
     public void Dispose()
     {
         _chatClient.Dispose();
-        _semaphoreSlim.Dispose();
+        
+        // Dispose all chat semaphores
+        foreach (var semaphore in _chatSemaphores.Values)
+        {
+            semaphore.Dispose();
+        }
+        _chatSemaphores.Clear();
     }
 }
