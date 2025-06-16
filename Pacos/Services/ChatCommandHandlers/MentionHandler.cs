@@ -149,11 +149,9 @@ public sealed class MentionHandler
 
         try
         {
-            // The switch for language/banned words still operates on the user's current message (`message`)
             replyText = messageText switch
             {
-                _ when _options.Value.AllowedLanguageCodes.All(lc => lc != languageCode) => "хуйню спизданул",
-                _ when _wordFilter.ContainsBannedWords(messageText) => "ты пидор, кстати",
+                _ when _wordFilter.ContainsBannedWords(fullMessageToLlm) => "ты пидор, кстати",
                 _ => (await _chatService.GetResponseAsync(
                         updateMessage.Chat.Id,
                         updateMessage.Id,
