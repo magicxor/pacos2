@@ -40,7 +40,7 @@ public static class Const
                                         Далее идут сообщения чата, которые нужно обобщить.
                                         """;
 
-    public const int MaxAllowedContextLength = 60_000;
+    public const int MaxAllowedContextLength = 50_000;
     public const int MaxTelegramMessageLength = 4096;
     public const int MaxTelegramCaptionLength = 1024;
     public const string DrawCommand = "!drawx";
