@@ -23,11 +23,26 @@ public sealed class ChatService : IDisposable
         _timeProvider = timeProvider;
     }
 
-    private ChatMessage GetSystemPrompt()
+    private ChatMessage GetSystemPrompt(string? previousChatSummary = null)
     {
-        return new ChatMessage(
-            ChatRole.System,
-            Const.SystemPrompt + Environment.NewLine + Environment.NewLine + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}");
+        var systemPrompt = Const.SystemPrompt
+                           + Environment.NewLine
+                           + Environment.NewLine
+                           + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}";
+
+        if (!string.IsNullOrWhiteSpace(previousChatSummary))
+        {
+            systemPrompt += Environment.NewLine
+                            + Environment.NewLine
+                            + "Краткое резюме предыдущей истории чата: " + previousChatSummary;
+        }
+
+        return new ChatMessage(ChatRole.System, systemPrompt);
+    }
+
+    private static ChatMessage GetSumSystemPrompt()
+    {
+        return new ChatMessage(ChatRole.System, Const.SummarizationPrompt);
     }
 
     private SemaphoreSlim GetOrCreateChatSemaphore(long chatId)
@@ -49,12 +64,23 @@ public sealed class ChatService : IDisposable
         try
         {
             var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [GetSystemPrompt()]);
+            var wasHistorySummarized = false;
 
             if (chatHistory.Sum(x => x.Text.Length) + messageText.Length is var numberOfCharacters and > Const.MaxAllowedContextLength)
             {
-                _logger.LogWarning("Chat history is too long ({NumberOfCharacters} characters), clearing history", numberOfCharacters);
+                _logger.LogInformation("Chat history is too long ({NumberOfCharacters} characters), clearing history", numberOfCharacters);
+
+                // summarize chat history instead of clearing it
+                var summarizedResponse = await _chatClient.GetResponseAsync(
+                    [GetSumSystemPrompt(),
+                        ..chatHistory.Where(x => x.Role != ChatRole.System)]);
+
+                _logger.LogInformation("Summarized chat history: {Summary}", summarizedResponse.Text);
+
                 chatHistory.Clear();
-                chatHistory.Add(GetSystemPrompt());
+                chatHistory.Add(GetSystemPrompt(summarizedResponse.Text));
+
+                wasHistorySummarized = true;
             }
 
             var inputContents = new List<AIContent> { new TextContent(messageText) };
@@ -94,11 +120,16 @@ public sealed class ChatService : IDisposable
             var functionCallCount = functionCalls.Count;
             if (functionCallCount > 0)
             {
-                responseText = $"[{functionCallCount}🔧] " + responseText;
+                responseText = $"{(functionCallCount > 1 ? functionCallCount : string.Empty)}🔧 " + responseText;
 
                 var functionCallsSerialized = functionCalls.Select(x => $"{x.Name} ({string.Join(", ", x.Arguments?.Select(a => $"{a.Key}: {a.Value}") ?? [])})");
                 var functionCallsString = string.Join(", ", $"[{functionCallsSerialized}]");
                 _logger.LogInformation("Function calls: {FunctionCalls}", functionCallsString);
+            }
+
+            if (wasHistorySummarized)
+            {
+                responseText = "🗜️ " + responseText;
             }
 
             return (responseText, dataContents);
@@ -134,7 +165,7 @@ public sealed class ChatService : IDisposable
     public void Dispose()
     {
         _chatClient.Dispose();
-        
+
         // Dispose all chat semaphores
         foreach (var semaphore in _chatSemaphores.Values)
         {
