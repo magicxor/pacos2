@@ -1,10 +1,13 @@
-﻿using Microsoft.Extensions.Options;
+﻿using GenerativeAI.Exceptions;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using NTextCat;
 using Pacos.Constants;
 using Pacos.Extensions;
 using Pacos.Models.Options;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
+using Polly;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -84,6 +87,36 @@ public sealed class MentionHandler
         }
     }
 
+    private async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetChatResponseWithRetryAsync(
+        long chatId,
+        long messageId,
+        string authorName,
+        string messageText,
+        byte[]? fileBytes = null,
+        string? fileMimeType = null)
+    {
+        var result = await Policy
+            .Handle<Exception>()
+            .Or<ApiException>()
+            .Or<HttpRequestException>()
+            .WaitAndRetryAsync(retryCount: 2, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200))
+            .ExecuteAndCaptureAsync(async () => await _chatService.GetResponseAsync(
+                chatId,
+                messageId,
+                authorName,
+                messageText,
+                fileBytes,
+                fileMimeType
+            ));
+
+        return result switch
+        {
+            { Outcome: OutcomeType.Failure, FinalException: not null } => throw result.FinalException,
+            { Outcome: OutcomeType.Failure, FinalException: null } => throw new InvalidOperationException("Unexpected failure without an exception in the result."),
+            _ => result.Result,
+        };
+    }
+
     public async Task HandleMentionAsync(
         ITelegramBotClient botClient,
         Message updateMessage,
@@ -149,12 +182,10 @@ public sealed class MentionHandler
 
         try
         {
-            // The switch for language/banned words still operates on the user's current message (`message`)
             replyText = messageText switch
             {
-                _ when _options.Value.AllowedLanguageCodes.All(lc => lc != languageCode) => "хуйню спизданул",
-                _ when _wordFilter.ContainsBannedWords(messageText) => "ты пидор, кстати",
-                _ => (await _chatService.GetResponseAsync(
+                _ when _wordFilter.ContainsBannedWords(fullMessageToLlm) => "ты пидор, кстати",
+                _ => (await GetChatResponseWithRetryAsync(
                         updateMessage.Chat.Id,
                         updateMessage.Id,
                         author,
