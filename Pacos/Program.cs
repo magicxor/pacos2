@@ -122,13 +122,15 @@ public sealed class Program
                             httpClient: s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.GoogleCloud)),
                             logger: s.GetRequiredService<ILogger<GenerativeModel>>());
 
+                        chatGenerativeModel.EnableFunctions();
+                        chatGenerativeModel.UseGoogleSearch = true;
+
                         var chatClientObj = new GenerativeAIChatClient(
                             adapter: chatGenerativeModel.Platform,
-                            modelName: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel);
-
-                        chatClientObj.model.EnableFunctions();
-                        chatClientObj.model.UseGoogleSearch = true;
-                        chatClientObj.AutoCallFunction = true;
+                            modelName: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel)
+                        {
+                            AutoCallFunction = true,
+                        };
 
                         chatClientObj.ReplaceModel(chatGenerativeModel, s.GetRequiredService<ILogger<IChatClient>>());
 
