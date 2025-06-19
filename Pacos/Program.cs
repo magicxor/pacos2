@@ -1,8 +1,8 @@
 using System.Net;
 using GenerativeAI;
 using GenerativeAI.Microsoft;
-using GenerativeAI.Types;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Config;
@@ -16,8 +16,8 @@ using Pacos.Services.BackgroundTasks;
 using Pacos.Services.ChatCommandHandlers;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
+using Pacos.Utils;
 using Telegram.Bot;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Pacos;
@@ -38,109 +38,114 @@ public sealed class Program
         try
         {
             var host = Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration((_, configBuilder) =>
-            {
-                configBuilder.AddEnvironmentVariables();
-            })
-            .ConfigureLogging(loggingBuilder =>
-            {
-                loggingBuilder.ClearProviders();
-                loggingBuilder.SetMinimumLevel(LogLevel.Trace);
-                loggingBuilder.AddNLog(LoggingConfiguration);
-            })
-            .ConfigureServices((hostContext, services) =>
-            {
-                services
-                    .AddOptions<PacosOptions>()
-                    .Bind(hostContext.Configuration.GetSection(nameof(OptionSections.Pacos)))
-                    .ValidateDataAnnotations()
-                    .ValidateOnStart();
-
-                services.AddHttpClient(nameof(HttpClientType.Telegram))
-                    .AddDefaultLogger()
-                    .AddStandardResilienceHandler();
-
-                services.AddHttpClient(nameof(HttpClientType.GoogleCloud))
-                    .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
-                    {
-                        var proxyAddress = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy;
-                        var proxyUsername = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin;
-                        var proxyPassword = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword;
-
-                        var webProxy = string.IsNullOrWhiteSpace(proxyAddress)
-                            ? null
-                            : new WebProxy(
-                                Address: proxyAddress,
-                                BypassOnLocal: true,
-                                BypassList: null,
-                                Credentials: new NetworkCredential(proxyUsername, proxyPassword));
-
-                        switch (handler)
-                        {
-                            case SocketsHttpHandler socketsHttpHandler:
-                                socketsHttpHandler.Proxy = webProxy;
-                                break;
-                            case HttpClientHandler httpClientHandler:
-                                httpClientHandler.Proxy = webProxy;
-                                break;
-                            default:
-                                serviceProvider.GetService<ILogger<IHttpClientBuilder>>()?.LogWarning(
-                                    "Unknown HttpMessageHandler type: {HandlerType}. Proxy will not be set",
-                                    handler.GetType().FullName);
-                                break;
-                        }
-                    })
-                    .AddDefaultLogger()
-                    .AddStandardResilienceHandler();
-
-                var bannedWords = File.Exists(BanWordsFileName)
-                    ? File.ReadAllLines(BanWordsFileName)
-                    : [];
-
-                services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
-                services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
-                        s.GetRequiredService<IOptions<PacosOptions>>().Value.TelegramBotApiKey,
-                        s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
-                    ));
-                services.AddHostedService<QueuedHostedService>();
-                services.AddSingleton<MarkdownConversionService>();
-                services.AddSingleton<IChatClient>(s =>
+                .ConfigureAppConfiguration((_, configBuilder) => configBuilder.AddEnvironmentVariables())
+                .ConfigureLogging(loggingBuilder =>
                 {
-                    var loggerFactory = s.GetRequiredService<ILoggerFactory>();
+                    loggingBuilder.ClearProviders();
+                    loggingBuilder.SetMinimumLevel(LogLevel.Trace);
+                    loggingBuilder.AddNLog(LoggingConfiguration);
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services
+                        .AddOptions<PacosOptions>()
+                        .Bind(hostContext.Configuration.GetSection(nameof(OptionSections.Pacos)))
+                        .ValidateDataAnnotations()
+                        .ValidateOnStart();
 
-                    var chatGenerativeModel = new GenerativeModel(
-                        apiKey: s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
-                        model: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
-                        safetySettings: Const.SafetySettings,
-                        httpClient: s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.GoogleCloud)),
-                        logger: s.GetRequiredService<ILogger<GenerativeModel>>());
+                    var telegramRequestTimeout = TimeSpan.FromSeconds(40);
+                    services.AddHttpClient(nameof(HttpClientType.Telegram), httpClient => httpClient.Timeout = telegramRequestTimeout)
+                        .AddDefaultLogger()
+                        .AddStandardResilienceHandler(x =>
+                        {
+                            x.AttemptTimeout = new HttpTimeoutStrategyOptions { Timeout = telegramRequestTimeout };
+                            x.TotalRequestTimeout = new HttpTimeoutStrategyOptions { Timeout = x.AttemptTimeout.Timeout * 2 };
+                            x.CircuitBreaker.SamplingDuration = x.AttemptTimeout.Timeout * 2;
+                        });
 
-                    var chatClientObj = new GenerativeAIChatClient(
-                        adapter: chatGenerativeModel.Platform,
-                        modelName: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel);
+                    var googleRequestTimeout = TimeSpan.FromMinutes(2);
+                    services.AddHttpClient(nameof(HttpClientType.GoogleCloud), httpClient => httpClient.Timeout = googleRequestTimeout)
+                        .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
+                        {
+                            var proxyAddress = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy;
+                            var proxyUsername = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin;
+                            var proxyPassword = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword;
 
-                    chatClientObj.model.EnableFunctions();
-                    chatClientObj.model.UseGoogleSearch = true;
+                            var webProxy = string.IsNullOrWhiteSpace(proxyAddress)
+                                ? null
+                                : new WebProxy(
+                                    Address: proxyAddress,
+                                    BypassOnLocal: true,
+                                    BypassList: null,
+                                    Credentials: new NetworkCredential(proxyUsername, proxyPassword));
 
-                    var chatClient = chatClientObj
-                        .AsBuilder()
-                        .UseFunctionInvocation(loggerFactory, cfg => cfg.AllowConcurrentInvocation = true)
-                        .UseLogging(loggerFactory)
-                        .Build();
-                    return chatClient;
-                });
-                services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
-                services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
-                services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
-                services.AddSingleton<ChatService>();
-                services.AddSingleton<ImageGenerationService>();
-                services.AddSingleton<DrawHandler>();
-                services.AddSingleton<ResetHandler>();
-                services.AddSingleton<MentionHandler>();
-                services.AddSingleton<TelegramBotService>();
-                services.AddHostedService<Worker>();
-            })
-            .Build();
+                            switch (handler)
+                            {
+                                case SocketsHttpHandler socketsHttpHandler:
+                                    socketsHttpHandler.Proxy = webProxy;
+                                    break;
+                                case HttpClientHandler httpClientHandler:
+                                    httpClientHandler.Proxy = webProxy;
+                                    break;
+                                default:
+                                    serviceProvider.GetService<ILogger<IHttpClientBuilder>>()?.LogWarning(
+                                        "Unknown HttpMessageHandler type: {HandlerType}. Proxy will not be set",
+                                        handler.GetType().FullName);
+                                    break;
+                            }
+                        })
+                        .AddDefaultLogger()
+                        .AddStandardResilienceHandler(x =>
+                        {
+                            x.AttemptTimeout = new HttpTimeoutStrategyOptions { Timeout = googleRequestTimeout };
+                            x.TotalRequestTimeout = new HttpTimeoutStrategyOptions { Timeout = x.AttemptTimeout.Timeout * 2 };
+                            x.CircuitBreaker.SamplingDuration = x.AttemptTimeout.Timeout * 2;
+                        });
+
+                    var bannedWords = File.Exists(BanWordsFileName)
+                        ? File.ReadAllLines(BanWordsFileName)
+                        : [];
+
+                    services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
+                    services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
+                            s.GetRequiredService<IOptions<PacosOptions>>().Value.TelegramBotApiKey,
+                            s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.Telegram))
+                        ));
+                    services.AddHostedService<QueuedHostedService>();
+                    services.AddSingleton<MarkdownConversionService>();
+                    services.AddSingleton<IChatClient>(s =>
+                    {
+                        var chatGenerativeModel = new GenerativeModel(
+                            apiKey: s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
+                            model: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
+                            safetySettings: Const.SafetySettings,
+                            httpClient: s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.GoogleCloud)),
+                            logger: s.GetRequiredService<ILogger<GenerativeModel>>());
+
+                        var chatClientObj = new GenerativeAIChatClient(
+                            adapter: chatGenerativeModel.Platform,
+                            modelName: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel);
+
+                        chatClientObj.model.EnableFunctions();
+                        chatClientObj.model.UseGoogleSearch = true;
+                        chatClientObj.AutoCallFunction = true;
+
+                        chatClientObj.ReplaceModel(chatGenerativeModel, s.GetRequiredService<ILogger<IChatClient>>());
+
+                        return chatClientObj;
+                    });
+                    services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
+                    services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
+                    services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
+                    services.AddSingleton<ChatService>();
+                    services.AddSingleton<ImageGenerationService>();
+                    services.AddSingleton<DrawHandler>();
+                    services.AddSingleton<ResetHandler>();
+                    services.AddSingleton<MentionHandler>();
+                    services.AddSingleton<TelegramBotService>();
+                    services.AddHostedService<Worker>();
+                })
+                .Build();
 
             host.Run();
         }
