@@ -1,3 +1,5 @@
+using GenerativeAI.Types;
+
 namespace Pacos.Constants;
 
 public static class Const
@@ -23,6 +25,8 @@ public static class Const
                                         8. Тон: свободный, раскованный. Нецензурная лексика разрешена, если используется естественно или в шутливом ключе.
                                         9. Эмодзи: используй по минимуму и только по делу.
                                         10. Технические ограничения: НИКОГДА не используй LaTeX разметку.
+                                        11. Будь честным: если не знаешь ответа, скажи об этом прямо, но постарайся дать полезную информацию или направить пользователя в нужное русло. НИКОГДА не придумывай несуществующие факты.
+                                        12. Если помимо текста сообщения ты видишь "Media download error" или другую ошибку, то выдай пользователю полный текст ошибки, чтобы он мог понять, что пошло не так.
                                         """;
     public const string SummarizationPrompt = """
                                         # РОЛЬ
@@ -45,4 +49,37 @@ public static class Const
     public const int MaxTelegramCaptionLength = 1024;
     public const string DrawCommand = "!drawx";
     public const string ResetCommand = "!resetx";
+
+    public static readonly ICollection<SafetySetting> SafetySettings =
+    [
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_HARASSMENT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+    ];
 }

@@ -1,6 +1,7 @@
 using GenerativeAI;
 using GenerativeAI.Types;
 using Microsoft.Extensions.Options;
+using Pacos.Constants;
 using Pacos.Enums;
 using Pacos.Models.Options;
 
@@ -11,40 +12,6 @@ public sealed class ImageGenerationService
     private readonly IOptions<PacosOptions> _options;
     private readonly ILogger<ImageGenerationService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-
-    private static readonly List<SafetySetting> ImgSafetySettings =
-    [
-        new()
-        {
-            Category = HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            Threshold = HarmBlockThreshold.OFF,
-        },
-
-        new()
-        {
-            Category = HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            Threshold = HarmBlockThreshold.OFF,
-        },
-
-        new()
-        {
-            Category = HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            Threshold = HarmBlockThreshold.OFF,
-        },
-
-        new()
-        {
-            Category = HarmCategory.HARM_CATEGORY_HARASSMENT,
-            Threshold = HarmBlockThreshold.OFF,
-        },
-
-        new()
-        {
-            Category = HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
-            Threshold = HarmBlockThreshold.OFF,
-        },
-
-    ];
 
     public ImageGenerationService(
         IOptions<PacosOptions> options,
@@ -62,8 +29,8 @@ public sealed class ImageGenerationService
             apiKey: _options.Value.GoogleCloudApiKey,
             model: _options.Value.ImageGenerationModel,
             new GenerationConfig { ResponseModalities = [Modality.IMAGE, Modality.TEXT] },
-            ImgSafetySettings,
-            httpClient: _httpClientFactory.CreateClient(nameof(HttpClientType.GoogleCloudImageGeneration)),
+            Const.SafetySettings,
+            httpClient: _httpClientFactory.CreateClient(nameof(HttpClientType.GoogleCloud)),
             logger: _logger);
     }
 

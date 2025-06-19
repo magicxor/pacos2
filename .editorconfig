@@ -336,6 +336,9 @@ dotnet_diagnostic.SA1513.severity = none
 # SS018: Missing enum member in switched cases.
 dotnet_diagnostic.SS018.severity = none
 
+# S3011: Make sure that this accessibility bypass is safe here.
+dotnet_diagnostic.S3011.severity = suggestion
+
 # ReSharper
 resharper_redundant_type_declaration_body_highlighting = none
 
