@@ -1,9 +1,10 @@
-﻿using GenerativeAI.Exceptions;
+using GenerativeAI.Exceptions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using NTextCat;
 using Pacos.Constants;
 using Pacos.Extensions;
+using Pacos.Models;
 using Pacos.Models.Options;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
@@ -39,29 +40,40 @@ public sealed class MentionHandler
         _markdownConversionService = markdownConversionService;
     }
 
-    private static (string FileId, string MimeType)? GetFileInfo(Message? message)
+    private static TelegramFileMetadata? GetFileMetadata(Message? message)
     {
         return message switch
         {
-            { Photo: [.., var lastPhoto] } => (lastPhoto.FileId, "image/jpeg"),
-            { Video: { } video } => (video.FileId, video.MimeType ?? "video/mp4"),
-            { VideoNote: { } videoNote } => (videoNote.FileId, "video/mp4"),
-            { Audio: { } audio } => (audio.FileId, audio.MimeType ?? "audio/mpeg"),
-            { Voice: { } voice } => (voice.FileId, voice.MimeType ?? "audio/ogg"),
-            { Animation: { } animation } => (animation.FileId, animation.MimeType ?? "video/mp4"),
-            { Sticker: { } sticker } => (sticker.FileId, sticker.Type == StickerType.Regular ? "image/webp" : "application/octet-stream"),
-            { Document: { } document } when !string.IsNullOrEmpty(document.MimeType) => (document.FileId, document.MimeType),
+            { Photo: { } photos } when photos.MaxBy(p => p.Width) is { } biggestPhoto => new TelegramFileMetadata(biggestPhoto.FileId, "image/jpeg", biggestPhoto.FileSize),
+            { Video: { } video } => new TelegramFileMetadata(video.FileId, video.MimeType ?? "video/mp4", video.FileSize),
+            { VideoNote: { } videoNote } => new TelegramFileMetadata(videoNote.FileId, "video/mp4", videoNote.FileSize),
+            { Audio: { } audio } => new TelegramFileMetadata(audio.FileId, audio.MimeType ?? "audio/mpeg", audio.FileSize),
+            { Voice: { } voice } => new TelegramFileMetadata(voice.FileId, voice.MimeType ?? "audio/ogg", voice.FileSize),
+            { Animation: { } animation } => new TelegramFileMetadata(animation.FileId, animation.MimeType ?? "video/mp4", animation.FileSize),
+            { Sticker: { } sticker } => new TelegramFileMetadata(sticker.FileId, sticker.Type == StickerType.Regular ? "image/webp" : "application/octet-stream", sticker.FileSize),
+            { Document: { } document } when !string.IsNullOrEmpty(document.MimeType) => new TelegramFileMetadata(document.FileId, document.MimeType, document.FileSize),
             _ => null,
         };
     }
 
-    private async Task<byte[]?> DownloadMediaIfPresentAsync(
-        string? fileId,
+    private async Task<(byte[]? FileBytes, string? ErrorMessage)> DownloadMediaIfPresentAsync(
+        TelegramFileMetadata? fileMetadata,
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
+        var fileId = fileMetadata?.FileId;
+        var fileSize = fileMetadata?.FileSize;
+
         if (string.IsNullOrEmpty(fileId))
-            return null;
+            return (null, "No fileId provided for media download.");
+
+        // 20 MB limit for media files
+        const long maxFileSize = 20 * 1024 * 1024;
+
+        if (fileSize is > maxFileSize)
+        {
+            return (null, $"File size {fileSize} bytes exceeds the maximum allowed size of {maxFileSize} bytes.");
+        }
 
         _logger.LogDebug("Downloading media with fileId={FileId}", fileId);
         var fileInfo = await botClient.GetFile(fileId, cancellationToken);
@@ -69,7 +81,7 @@ public sealed class MentionHandler
         if (string.IsNullOrEmpty(fileInfo.FilePath))
         {
             _logger.LogWarning("FilePath is null or empty for fileId={FileId}. Cannot download media", fileId);
-            return null;
+            return (null, "FilePath is null or empty. Cannot download media.");
         }
 
         try
@@ -78,12 +90,12 @@ public sealed class MentionHandler
             await botClient.DownloadFile(fileInfo.FilePath, memoryStream, cancellationToken);
             var downloadedImageBytes = memoryStream.ToArray();
             _logger.LogInformation("Successfully downloaded media with fileId={FileId}, size={Size} bytes", fileId, downloadedImageBytes.Length);
-            return downloadedImageBytes;
+            return (downloadedImageBytes, null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error downloading media with fileId={FileId}", fileId);
-            return null;
+            return (null, ex.Message);
         }
     }
 
@@ -170,13 +182,18 @@ public sealed class MentionHandler
             messageText,
             originalMessageLogInfo); // Log user's message and info about replied message
 
-        var mediaInfo = GetFileInfo(updateMessage) ?? GetFileInfo(updateMessage.ReplyToMessage);
+        var fileMetadata = GetFileMetadata(updateMessage) ?? GetFileMetadata(updateMessage.ReplyToMessage);
         _logger.LogInformation("Media info for message from {Author}: FileId={FileId}, MimeType={MimeType}",
             author,
-            mediaInfo?.FileId,
-            mediaInfo?.MimeType);
+            fileMetadata?.FileId,
+            fileMetadata?.MimeType);
 
-        var mediaBytes = await DownloadMediaIfPresentAsync(mediaInfo?.FileId, botClient, cancellationToken);
+        var media = await DownloadMediaIfPresentAsync(fileMetadata, botClient, cancellationToken);
+
+        if (fileMetadata?.FileId is not null && media.FileBytes is null && media.ErrorMessage is not null)
+        {
+            fullMessageToLlm = $"{fullMessageToLlm}\n\n[Media download error: {media.ErrorMessage}]";
+        }
 
         var replyText = string.Empty;
 
@@ -190,8 +207,8 @@ public sealed class MentionHandler
                         updateMessage.Id,
                         author,
                         fullMessageToLlm,
-                        mediaBytes,
-                        mediaInfo?.MimeType
+                        media.FileBytes,
+                        fileMetadata?.MimeType
                      )).Text,
             };
             replyText = replyText.Cut(Const.MaxTelegramMessageLength);
