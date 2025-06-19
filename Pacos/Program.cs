@@ -63,13 +63,17 @@ public sealed class Program
                 services.AddHttpClient(nameof(HttpClientType.GoogleCloud))
                     .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
                     {
-                        var webProxy = new WebProxy(
-                            Address: serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy,
-                            BypassOnLocal: true,
-                            BypassList: null,
-                            Credentials: new NetworkCredential(
-                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin,
-                                serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword));
+                        var proxyAddress = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy;
+                        var proxyUsername = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyLogin;
+                        var proxyPassword = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxyPassword;
+
+                        var webProxy = string.IsNullOrWhiteSpace(proxyAddress)
+                            ? null
+                            : new WebProxy(
+                                Address: proxyAddress,
+                                BypassOnLocal: true,
+                                BypassList: null,
+                                Credentials: new NetworkCredential(proxyUsername, proxyPassword));
 
                         switch (handler)
                         {
