@@ -1,11 +1,14 @@
 using System.Net;
+using GenerativeAI;
 using GenerativeAI.Microsoft;
+using GenerativeAI.Types;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Config;
 using NLog.Extensions.Logging;
 using NTextCat;
+using Pacos.Constants;
 using Pacos.Enums;
 using Pacos.Models.Options;
 using Pacos.Services;
@@ -14,6 +17,7 @@ using Pacos.Services.ChatCommandHandlers;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
 using Telegram.Bot;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Pacos;
@@ -56,7 +60,7 @@ public sealed class Program
                     .AddDefaultLogger()
                     .AddStandardResilienceHandler();
 
-                services.AddHttpClient(nameof(HttpClientType.GoogleCloudImageGeneration))
+                services.AddHttpClient(nameof(HttpClientType.GoogleCloud))
                     .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
                     {
                         var webProxy = new WebProxy(
@@ -99,10 +103,17 @@ public sealed class Program
                 services.AddSingleton<IChatClient>(s =>
                 {
                     var loggerFactory = s.GetRequiredService<ILoggerFactory>();
+
+                    var chatGenerativeModel = new GenerativeModel(
+                        apiKey: s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
+                        model: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
+                        safetySettings: Const.SafetySettings,
+                        httpClient: s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.GoogleCloud)),
+                        logger: s.GetRequiredService<ILogger<GenerativeModel>>());
+
                     var chatClientObj = new GenerativeAIChatClient(
-                            s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
-                            s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
-                            autoCallFunction: true);
+                        adapter: chatGenerativeModel.Platform,
+                        modelName: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel);
 
                     chatClientObj.model.EnableFunctions();
                     chatClientObj.model.UseGoogleSearch = true;

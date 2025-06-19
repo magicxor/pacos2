@@ -1,3 +1,5 @@
+using GenerativeAI.Types;
+
 namespace Pacos.Constants;
 
 public static class Const
@@ -45,4 +47,37 @@ public static class Const
     public const int MaxTelegramCaptionLength = 1024;
     public const string DrawCommand = "!drawx";
     public const string ResetCommand = "!resetx";
+
+    public static readonly ICollection<SafetySetting> SafetySettings =
+    [
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_HARASSMENT,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+
+        new()
+        {
+            Category = HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+            Threshold = HarmBlockThreshold.OFF,
+        },
+    ];
 }
