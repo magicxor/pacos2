@@ -10,13 +10,13 @@ using NLog.Extensions.Logging;
 using NTextCat;
 using Pacos.Constants;
 using Pacos.Enums;
+using Pacos.Extensions;
 using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
 using Pacos.Services.ChatCommandHandlers;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
-using Pacos.Utils;
 using Telegram.Bot;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -132,6 +132,7 @@ public sealed class Program
                             AutoCallFunction = true,
                         };
 
+                        // GenerativeAIChatClient recreates GenerativeModel, so we have to use a hack to set the model
                         chatClientObj.ReplaceModel(chatGenerativeModel, s.GetRequiredService<ILogger<IChatClient>>());
 
                         return chatClientObj;

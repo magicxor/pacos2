@@ -2,9 +2,9 @@
 using GenerativeAI;
 using GenerativeAI.Microsoft;
 
-namespace Pacos.Utils;
+namespace Pacos.Extensions;
 
-public static class GeminiClientHackTools
+public static class GenerativeAiChatClientExtensions
 {
     public static void ReplaceModel(
         this GenerativeAIChatClient chatClient,
