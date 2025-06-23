@@ -16,21 +16,14 @@ public sealed class PacosOptions
     public required long[] AllowedChatIds { get; set; }
 
     [Required]
-    [MinLength(1)]
-    public required string[] AllowedLanguageCodes { get; set; }
-
-    [Required]
     public required string ChatModel { get; set; }
 
     [Required]
     public required string ImageGenerationModel { get; set; }
 
-    [Required]
-    public required string WebProxy { get; set; }
+    public required string? WebProxy { get; set; }
 
-    [Required]
-    public required string WebProxyLogin { get; set; }
+    public required string? WebProxyLogin { get; set; }
 
-    [Required]
-    public required string WebProxyPassword { get; set; }
+    public required string? WebProxyPassword { get; set; }
 }
