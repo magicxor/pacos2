@@ -1,5 +1,6 @@
 ﻿using Markdig;
 using Markdig.Extensions.EmphasisExtras;
+using Pacos.Services.Markdown.Spoiler;
 
 namespace Pacos.Extensions;
 
@@ -8,6 +9,7 @@ public static class MarkdownPipelineExtensions
     public static MarkdownPipelineBuilder UseMdExtensions(this MarkdownPipelineBuilder pipeline)
     {
         return pipeline
+            .UseSpoilers()
             .UseAlertBlocks()
             .UseAutoIdentifiers()
             .UseCustomContainers()
