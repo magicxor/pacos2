@@ -6,26 +6,26 @@ namespace Pacos.Models;
 public sealed class McpServer
 {
     [JsonPropertyName("type")]
-    public ServerType Type { get; init; }
+    public ServerType Type { get; set; }
 
     [JsonIgnore]
     public string? Name { get; set; }
 
     [JsonPropertyName("command")]
-    public string? Command { get; init; }
+    public string? Command { get; set; }
 
     [JsonPropertyName("args")]
-    public string[] Args { get; init; } = [];
+    public string[] Args { get; set; } = [];
 
     [JsonPropertyName("env")]
-    public Dictionary<string, string?> Env { get; init; } = new();
+    public Dictionary<string, string?> Env { get; set; } = new();
 
     [JsonPropertyName("envFile")]
-    public string? EnvFile { get; init; }
+    public string? EnvFile { get; set; }
 
     [JsonPropertyName("url")]
-    public string? Url { get; init; }
+    public string? Url { get; set; }
 
     [JsonPropertyName("headers")]
-    public Dictionary<string, string> Headers { get; init; } = new();
+    public Dictionary<string, string> Headers { get; set; } = new();
 }

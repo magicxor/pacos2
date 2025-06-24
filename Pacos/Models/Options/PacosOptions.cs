@@ -6,7 +6,7 @@ public sealed class PacosOptions
 {
     [Required]
     [RegularExpression(".*:.*")]
-    public required string TelegramBotApiKey { get; init; }
+    public required string TelegramBotApiKey { get; set; }
 
     [Required]
     public required string GoogleCloudApiKey { get; set; }
