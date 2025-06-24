@@ -45,3 +45,12 @@ More | Data | Here
 Special characters that need escaping: \_ \* \[ \] \( \) \~ \` \> \# \+ \- \=   \. \!
 
 HTML tags: bold, italic, underline, strikethrough, code
+
+
+\-\-\-
+
+This is a ||spoiler|| inside some text
+Finds all occurrences of `||text||` and turns them into spoilers
+||spoiler1\|\|\|\|spoiler2\|\|\|\|spoiler3||
+||spoiler1|| ||spoiler2|| ||spoiler3||
+||\~spoiler1\~|| ||\*spoiler2\*|| ||\_\_spoiler2\_\_|| ​_​||\_\_spoiler2\_\_||​_​

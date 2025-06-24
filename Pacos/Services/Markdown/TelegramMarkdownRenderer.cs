@@ -1,10 +1,11 @@
-﻿using System.Collections.Frozen;
+using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Pacos.Services.Markdown.Spoiler;
 
 namespace Pacos.Services.Markdown;
 
@@ -394,6 +395,11 @@ public sealed class TelegramMarkdownRenderer
                 break;
             case AutolinkInline autolink:
                 _output.Append(CultureInfo.InvariantCulture, $"[{EscapeText(autolink.Url)}]({EscapeLinkUrl(autolink.Url)})");
+                break;
+            case SpoilerInline spoiler:
+                _output.Append("||");
+                _output.Append(EscapeText(spoiler.Content.ToString()));
+                _output.Append("||");
                 break;
             default:
                 // For unknown inline types, check if it's a container
