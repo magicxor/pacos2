@@ -43,3 +43,11 @@ Here's a simple table:
 Special characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
 
 HTML tags: <b>bold</b>, <i>italic</i>, <u>underline</u>, <s>strikethrough</s>, <code>code</code>
+
+---
+
+This is a ||spoiler|| inside some text
+Finds all occurrences of `||text||` and turns them into spoilers
+||spoiler1||||spoiler2||||spoiler3||
+||spoiler1|| ||spoiler2|| ||spoiler3||
+||~spoiler1~|| ||*spoiler2*|| ||__spoiler2__|| *||__spoiler2__||*
