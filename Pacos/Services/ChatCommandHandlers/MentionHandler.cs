@@ -109,7 +109,7 @@ public sealed class MentionHandler
     {
         var result = await Policy
             .Handle<ApiException>(x => x.ErrorCode is 502 or 503 or 504
-                                       || x.ErrorMessage.Contains("try again", StringComparison.OrdinalIgnoreCase))
+                                       || x.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
             .Or<HttpRequestException>()
             .WaitAndRetryAsync(retryCount: 2, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200))
             .ExecuteAndCaptureAsync(async () => await _chatService.GetResponseAsync(
