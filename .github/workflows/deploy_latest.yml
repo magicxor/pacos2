@@ -44,6 +44,12 @@ jobs:
               -e Pacos__AllowedChatIds__1='${{ vars.PACOS__ALLOWEDCHATIDS__1 }}' \
               -e Pacos__AllowedChatIds__2='${{ vars.PACOS__ALLOWEDCHATIDS__2 }}' \
               -e Pacos__AllowedChatIds__3='${{ vars.PACOS__ALLOWEDCHATIDS__3 }}' \
+              -e Pacos__AllowedChatIds__4='${{ vars.PACOS__ALLOWEDCHATIDS__4 }}' \
+              -e Pacos__AllowedChatIds__5='${{ vars.PACOS__ALLOWEDCHATIDS__5 }}' \
+              -e Pacos__AllowedChatIds__6='${{ vars.PACOS__ALLOWEDCHATIDS__6 }}' \
+              -e Pacos__AllowedChatIds__7='${{ vars.PACOS__ALLOWEDCHATIDS__7 }}' \
+              -e Pacos__AllowedChatIds__8='${{ vars.PACOS__ALLOWEDCHATIDS__8 }}' \
+              -e Pacos__AllowedChatIds__9='${{ vars.PACOS__ALLOWEDCHATIDS__9 }}' \
               -e Pacos__AllowedLanguageCodes__0='${{ vars.PACOS__ALLOWEDLANGUAGECODES__0 }}' \
               -e Pacos__AllowedLanguageCodes__1='${{ vars.PACOS__ALLOWEDLANGUAGECODES__1 }}' \
               -e Pacos__ChatModel='${{ vars.PACOS__CHATMODEL }}' \
