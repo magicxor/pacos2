@@ -58,6 +58,10 @@
     <Content Include="Files\test_all_ru.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Remove="Files\quote_bug.md" />
+    <Content Include="Files\quote_bug.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

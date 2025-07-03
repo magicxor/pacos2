@@ -222,30 +222,28 @@ public sealed class MentionHandler
             replyText = $"{e.GetType().Name}: {e.Message}";
         }
 
-        replyText = _markdownConversionService.ConvertToTelegramMarkdown(replyText);
+        var markdownReplyText = _markdownConversionService.ConvertToTelegramMarkdown(replyText);
 
         _logger.LogInformation("Replying to {Author} with: {ReplyText}", author, replyText);
 
-        async Task SendReply(ParseMode parseMode)
+        async Task SendReply(string text, ParseMode parseMode)
         {
-            await botClient.SendMessage(new ChatId(updateMessage.Chat.Id),
-                replyText,
-                parseMode: parseMode,
-                replyParameters: new ReplyParameters
-                {
-                    MessageId = updateMessage.MessageId,
-                },
+            await botClient.SendMessage(
+                new ChatId(updateMessage.Chat.Id),
+                text,
+                parseMode,
+                new ReplyParameters { MessageId = updateMessage.MessageId, },
                 cancellationToken: cancellationToken);
         }
 
         try
         {
-            await SendReply(ParseMode.MarkdownV2);
+            await SendReply(markdownReplyText, ParseMode.MarkdownV2);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to send message with MarkdownV2. Falling back to plain text");
-            await SendReply(ParseMode.None);
+            await SendReply(replyText, ParseMode.None);
         }
     }
 }
