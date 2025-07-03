@@ -29,11 +29,11 @@ public sealed class QueuedHostedService : BackgroundService
 
             try
             {
-                _logger.LogInformation("Starting workItem processing... Queued tasks: {Count}", TaskQueue.ItemCount);
+                _logger.LogTrace("Starting workItem processing... Queued tasks: {Count}", TaskQueue.ItemCount);
 
                 await workItem(stoppingToken);
 
-                _logger.LogInformation("workItem processed. Queued tasks: {Count}", TaskQueue.ItemCount);
+                _logger.LogTrace("workItem processed. Queued tasks: {Count}", TaskQueue.ItemCount);
             }
             catch (Exception ex)
             {
