@@ -148,6 +148,7 @@ public sealed class TelegramMarkdownRenderer
             else
             {
                 // For regular lists, render all blocks normally
+                bool isFirstBlock = true;
                 foreach (var block in item)
                 {
                     if (block is ParagraphBlock para)
@@ -171,8 +172,14 @@ public sealed class TelegramMarkdownRenderer
                     }
                     else
                     {
+                        // Add line break before non-paragraph blocks (like quotes) if this is not the first block
+                        if (!isFirstBlock)
+                        {
+                            _output.AppendLine();
+                        }
                         RenderBlock(block);
                     }
+                    isFirstBlock = false;
                 }
             }
             _output.AppendLine();
