@@ -130,7 +130,7 @@ public sealed class Program
                         chatGenerativeModel.FunctionCallingBehaviour.AutoHandleBadFunctionCalls = true;
 
                         chatGenerativeModel.UseGoogleSearch = true;
-                        chatGenerativeModel.UseGrounding = true;
+                        chatGenerativeModel.UseGrounding = false;
                         chatGenerativeModel.UseCodeExecutionTool = true;
 
                         var chatClientObj = new GenerativeAIChatClient(
