@@ -40,9 +40,9 @@ public sealed class ChatService : IDisposable
         return new ChatMessage(ChatRole.System, systemPrompt);
     }
 
-    private static ChatMessage GetSumSystemPrompt()
+    private static ChatMessage GetSumUserPrompt()
     {
-        return new ChatMessage(ChatRole.System, Const.SummarizationPrompt);
+        return new ChatMessage(ChatRole.User, Const.SummarizationPrompt);
     }
 
     private SemaphoreSlim GetOrCreateChatSemaphore(long chatId)
@@ -65,22 +65,33 @@ public sealed class ChatService : IDisposable
         {
             var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [GetSystemPrompt()]);
             var wasHistorySummarized = false;
+            var wasSummarizationFailed = false;
 
             if (chatHistory.Sum(x => x.Text.Length) + messageText.Length is var numberOfCharacters and > Const.MaxAllowedContextLength)
             {
                 _logger.LogInformation("Chat history is too long ({NumberOfCharacters} characters), clearing history", numberOfCharacters);
 
-                // summarize chat history instead of clearing it
-                var summarizedResponse = await _chatClient.GetResponseAsync(
-                    [GetSumSystemPrompt(),
-                        ..chatHistory.Where(x => x.Role != ChatRole.System)]);
+                try
+                {
+                    // summarize chat history instead of clearing it
+                    var summarizedResponse = await _chatClient.GetResponseAsync(
+                        [..chatHistory, GetSumUserPrompt()]);
 
-                _logger.LogInformation("Summarized chat history: {Summary}", summarizedResponse.Text);
+                    _logger.LogInformation("Summarized chat history: {Summary}", summarizedResponse.Text);
 
-                chatHistory.Clear();
-                chatHistory.Add(GetSystemPrompt(summarizedResponse.Text));
+                    chatHistory.Clear();
+                    chatHistory.Add(GetSystemPrompt(summarizedResponse.Text));
 
-                wasHistorySummarized = true;
+                    wasHistorySummarized = true;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Failed to summarize chat history for chat ID {ChatId}", chatId);
+                    wasSummarizationFailed = true;
+
+                    chatHistory.Clear();
+                    chatHistory.Add(GetSystemPrompt());
+                }
             }
 
             var inputContents = new List<AIContent> { new TextContent(messageText) };
@@ -130,6 +141,11 @@ public sealed class ChatService : IDisposable
             if (wasHistorySummarized)
             {
                 responseText = "🗜️ " + responseText;
+            }
+
+            if (wasSummarizationFailed)
+            {
+                responseText = "♿ " + responseText;
             }
 
             return (responseText, dataContents);
