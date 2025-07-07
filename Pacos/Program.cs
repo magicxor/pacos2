@@ -123,7 +123,15 @@ public sealed class Program
                             logger: s.GetRequiredService<ILogger<GenerativeModel>>());
 
                         chatGenerativeModel.EnableFunctions();
+
+                        chatGenerativeModel.FunctionCallingBehaviour.AutoCallFunction = true;
+                        chatGenerativeModel.FunctionCallingBehaviour.AutoReplyFunction = true;
+                        chatGenerativeModel.FunctionCallingBehaviour.FunctionEnabled = true;
+                        chatGenerativeModel.FunctionCallingBehaviour.AutoHandleBadFunctionCalls = true;
+
                         chatGenerativeModel.UseGoogleSearch = true;
+                        chatGenerativeModel.UseGrounding = false;
+                        chatGenerativeModel.UseCodeExecutionTool = true;
 
                         var chatClientObj = new GenerativeAIChatClient(
                             adapter: chatGenerativeModel.Platform,
