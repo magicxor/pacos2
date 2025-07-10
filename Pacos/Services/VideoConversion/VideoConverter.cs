@@ -13,8 +13,14 @@ public class VideoConverter
         _logger = logger;
     }
 
-    public async Task<byte[]> ConvertAsync(byte[] fileBytes, CancellationToken cancellationToken)
+    public async Task<byte[]> ConvertAsync(byte[] fileBytes, long fileSizeLimit, CancellationToken cancellationToken)
     {
+        if (fileBytes.Length <= fileSizeLimit)
+        {
+            _logger.LogInformation("File size is within the limit. Returning original file bytes");
+            return fileBytes;
+        }
+
         var tempInputPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.mp4");
         var tempOutputPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.mp4");
 
@@ -27,19 +33,10 @@ public class VideoConverter
 
             const int maxWidth = 1280;
             const int maxHeight = 720;
-            const double maxFileSizeMb = 9.0d;
+            var convertedFileSizeLimit = fileSizeLimit * 0.9;
             const long maxAudioBitrate = 64000; // 64 kbps
 
             var videoStream = mediaInfo.PrimaryVideoStream ?? throw new InvalidOperationException("No video stream found in the file.");
-            var audioStream = mediaInfo.PrimaryAudioStream ?? throw new InvalidOperationException("No audio stream found in the file.");
-
-            _logger.LogInformation(
-                "Original video info: Width={Width}, Height={Height}, VideoBitrate={VideoBitrate}, AudioBitrate={AudioBitrate}, Duration={Duration}s",
-                videoStream.Width,
-                videoStream.Height,
-                videoStream.BitRate,
-                audioStream.BitRate,
-                mediaInfo.Duration.TotalSeconds);
 
             var ratioX = (double)maxWidth / videoStream.Width;
             var ratioY = (double)maxHeight / videoStream.Height;
@@ -47,45 +44,58 @@ public class VideoConverter
             var newWidth = (int)(videoStream.Width * ratio);
             var newHeight = (int)(videoStream.Height * ratio);
 
-            if (newWidth % 2 != 0)
+            if (newWidth % 2 != 0) newWidth--;
+            if (newHeight % 2 != 0) newHeight--;
+
+            var ffmpeg = FFMpegArguments.FromFileInput(tempInputPath);
+
+            if (mediaInfo.PrimaryAudioStream == null)
             {
-                newWidth--;
-            }
+                _logger.LogInformation("No audio stream detected. Adding a silent audio track");
 
-            if (newHeight % 2 != 0)
+                long calculatedVideoBitrate = (long)(convertedFileSizeLimit * 8 / mediaInfo.Duration.TotalSeconds);
+                var newVideoBitrate = Math.Min(videoStream.BitRate, calculatedVideoBitrate);
+                if (newVideoBitrate < 100000) newVideoBitrate = 100000;
+
+                _logger.LogInformation("New video parameters (no audio): Width={NewWidth}, Height={NewHeight}, VideoBitrate={NewVideoBitrate}", newWidth, newHeight, newVideoBitrate);
+
+                await ffmpeg.OutputToFile(tempOutputPath, false, options => options
+                        .WithCustomArgument("-f lavfi -i anullsrc")
+                        .WithVideoFilters(x => x.Scale(newWidth, newHeight))
+                        .WithVideoCodec(VideoCodec.LibX264)
+                        .WithVideoBitrate(Convert.ToInt32((double)newVideoBitrate / 1000))
+                        .WithSpeedPreset(Speed.Faster)
+                        .WithCustomArgument("-map 0:v") // Map video from the first input.
+                        .WithCustomArgument("-map 1:a") // Map audio from the second input (anullsrc).
+                        .WithAudioCodec("libopus")
+                        .WithAudioBitrate(16)
+                        .WithCustomArgument("-shortest") // Set output duration to the shortest input.
+                        .WithFastStart()
+                        .ForceFormat("mp4"))
+                    .ProcessAsynchronously();
+            }
+            else
             {
-                newHeight--;
+                var audioStream = mediaInfo.PrimaryAudioStream;
+                var newAudioBitrate = Math.Min(audioStream.BitRate, maxAudioBitrate);
+
+                long calculatedVideoBitrate = (long)(convertedFileSizeLimit * 8 / mediaInfo.Duration.TotalSeconds) - newAudioBitrate;
+                var newVideoBitrate = Math.Min(videoStream.BitRate, calculatedVideoBitrate);
+                if (newVideoBitrate < 100000) newVideoBitrate = 100000;
+
+                _logger.LogInformation("New video parameters: Width={NewWidth}, Height={NewHeight}, VideoBitrate={NewVideoBitrate}, AudioBitrate={NewAudioBitrate}", newWidth, newHeight, newVideoBitrate, newAudioBitrate);
+
+                await ffmpeg.OutputToFile(tempOutputPath, false, options => options
+                        .WithVideoFilters(x => x.Scale(newWidth, newHeight))
+                        .WithVideoCodec(VideoCodec.LibX264)
+                        .WithVideoBitrate(Convert.ToInt32((double)newVideoBitrate / 1000))
+                        .WithSpeedPreset(Speed.Faster)
+                        .WithAudioCodec("libopus")
+                        .WithAudioBitrate(Convert.ToInt32((double)newAudioBitrate / 1000))
+                        .WithFastStart()
+                        .ForceFormat("mp4"))
+                    .ProcessAsynchronously();
             }
-
-            var newAudioBitrate = Math.Min(audioStream.BitRate, maxAudioBitrate);
-
-            long calculatedVideoBitrate = (long)(maxFileSizeMb * 1024 * 1024 * 8 / mediaInfo.Duration.TotalSeconds) - newAudioBitrate;
-            var newVideoBitrate = Math.Min(videoStream.BitRate, calculatedVideoBitrate);
-
-            if (newVideoBitrate < 100000)
-            {
-                newVideoBitrate = 100000;
-            }
-
-            _logger.LogInformation(
-                "New video parameters: Width={NewWidth}, Height={NewHeight}, VideoBitrate={NewVideoBitrate}, AudioBitrate={NewAudioBitrate}",
-                newWidth,
-                newHeight,
-                newVideoBitrate,
-                newAudioBitrate);
-
-            await FFMpegArguments
-                .FromFileInput(tempInputPath)
-                .OutputToFile(tempOutputPath, false, options => options
-                    .WithVideoFilters(x => x.Scale(newWidth, newHeight))
-                    .WithVideoCodec(VideoCodec.LibX264)
-                    .WithVideoBitrate(Convert.ToInt32((double)newVideoBitrate / 1000))
-                    .WithSpeedPreset(Speed.Faster)
-                    .WithAudioCodec("libopus")
-                    .WithAudioBitrate(Convert.ToInt32((double)newAudioBitrate / 1000))
-                    .WithFastStart()
-                    .ForceFormat("mp4"))
-                .ProcessAsynchronously();
 
             _logger.LogInformation("Video conversion completed. Reading output file: {TempOutputPath}", tempOutputPath);
 
@@ -100,14 +110,8 @@ public class VideoConverter
         }
         finally
         {
-            if (File.Exists(tempInputPath))
-            {
-                File.Delete(tempInputPath);
-            }
-            if (File.Exists(tempOutputPath))
-            {
-                File.Delete(tempOutputPath);
-            }
+            if (File.Exists(tempInputPath)) File.Delete(tempInputPath);
+            if (File.Exists(tempOutputPath)) File.Delete(tempOutputPath);
             _logger.LogInformation("Temporary files cleaned up");
         }
     }

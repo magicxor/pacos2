@@ -190,11 +190,11 @@ public sealed class MentionHandler
         var media = await DownloadMediaIfPresentAsync(fileMetadata, botClient, cancellationToken);
 
         const int maxFileSize = 10_000_000;
-        if (fileMetadata?.MimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true && media.FileBytes is { Length: > maxFileSize })
+        if (fileMetadata?.MimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true && media.FileBytes is not null)
         {
             try
             {
-                media.FileBytes = await _videoConverter.ConvertAsync(media.FileBytes, cancellationToken);
+                media.FileBytes = await _videoConverter.ConvertAsync(media.FileBytes, maxFileSize, cancellationToken);
             }
             catch (Exception e)
             {
