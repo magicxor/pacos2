@@ -1,13 +1,12 @@
 using GenerativeAI.Exceptions;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Options;
 using NTextCat;
 using Pacos.Constants;
 using Pacos.Extensions;
 using Pacos.Models;
-using Pacos.Models.Options;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
+using Pacos.Services.VideoConversion;
 using Polly;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -18,26 +17,26 @@ namespace Pacos.Services.ChatCommandHandlers;
 public sealed class MentionHandler
 {
     private readonly ILogger<MentionHandler> _logger;
-    private readonly IOptions<PacosOptions> _options;
     private readonly RankedLanguageIdentifier _rankedLanguageIdentifier;
     private readonly WordFilter _wordFilter;
     private readonly ChatService _chatService;
     private readonly MarkdownConversionService _markdownConversionService;
+    private readonly VideoConverter _videoConverter;
 
     public MentionHandler(
         ILogger<MentionHandler> logger,
-        IOptions<PacosOptions> options,
         RankedLanguageIdentifier rankedLanguageIdentifier,
         WordFilter wordFilter,
         ChatService chatService,
-        MarkdownConversionService markdownConversionService)
+        MarkdownConversionService markdownConversionService,
+        VideoConverter videoConverter)
     {
         _logger = logger;
-        _options = options;
         _rankedLanguageIdentifier = rankedLanguageIdentifier;
         _wordFilter = wordFilter;
         _chatService = chatService;
         _markdownConversionService = markdownConversionService;
+        _videoConverter = videoConverter;
     }
 
     private static TelegramFileMetadata? GetFileMetadata(Message? message)
@@ -189,6 +188,20 @@ public sealed class MentionHandler
             fileMetadata?.MimeType);
 
         var media = await DownloadMediaIfPresentAsync(fileMetadata, botClient, cancellationToken);
+
+        const int maxFileSize = 10_000_000;
+        if (fileMetadata?.MimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true && media.FileBytes is not null)
+        {
+            try
+            {
+                media.FileBytes = await _videoConverter.ConvertAsync(media.FileBytes, maxFileSize, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to convert video for {Author}. Error: {ErrorMessage}", author, e.Message);
+                media.ErrorMessage = $"Video conversion failed: {e.Message}";
+            }
+        }
 
         if (fileMetadata?.FileId is not null && media.FileBytes is null && media.ErrorMessage is not null)
         {

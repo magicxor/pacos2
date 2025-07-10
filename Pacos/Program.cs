@@ -17,6 +17,7 @@ using Pacos.Services.BackgroundTasks;
 using Pacos.Services.ChatCommandHandlers;
 using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
+using Pacos.Services.VideoConversion;
 using Telegram.Bot;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -106,6 +107,7 @@ public sealed class Program
                         ? File.ReadAllLines(BanWordsFileName)
                         : [];
 
+                    services.AddSingleton<VideoConverter>();
                     services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                     services.AddSingleton<ITelegramBotClient>(s => new TelegramBotClient(
                             s.GetRequiredService<IOptions<PacosOptions>>().Value.TelegramBotApiKey,
@@ -131,7 +133,7 @@ public sealed class Program
 
                         chatGenerativeModel.UseGoogleSearch = true;
                         chatGenerativeModel.UseGrounding = false;
-                        chatGenerativeModel.UseCodeExecutionTool = true;
+                        chatGenerativeModel.UseCodeExecutionTool = false;
 
                         var chatClientObj = new GenerativeAIChatClient(
                             adapter: chatGenerativeModel.Platform,
