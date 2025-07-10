@@ -41,8 +41,21 @@ public class VideoConverter
             var ratioX = (double)maxWidth / videoStream.Width;
             var ratioY = (double)maxHeight / videoStream.Height;
             var ratio = Math.Min(ratioX, ratioY);
-            var newWidth = (int)(videoStream.Width * ratio);
-            var newHeight = (int)(videoStream.Height * ratio);
+
+            // Don't upscale video if it's already smaller than maximum dimensions
+            int newWidth, newHeight;
+            if (ratio > 1.0)
+            {
+                // Use original dimensions since video is already smaller than maximum
+                newWidth = videoStream.Width;
+                newHeight = videoStream.Height;
+            }
+            else
+            {
+                // Downscale video to maximum dimensions
+                newWidth = (int)(videoStream.Width * ratio);
+                newHeight = (int)(videoStream.Height * ratio);
+            }
 
             if (newWidth % 2 != 0) newWidth--;
             if (newHeight % 2 != 0) newHeight--;
