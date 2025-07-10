@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="FFMpegCore" />
         <PackageReference Include="Google_GenerativeAI.Microsoft" />
         <PackageReference Include="Humanizer.Core" />
         <PackageReference Include="Markdig" />
