@@ -98,7 +98,7 @@ public sealed class MentionHandler
         }
     }
 
-    private async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetChatResponseWithRetryAsync(
+    private async Task<ChatResponseInfo> GetChatResponseWithRetryAsync(
         long chatId,
         long messageId,
         string authorName,
@@ -110,6 +110,7 @@ public sealed class MentionHandler
             .Handle<ApiException>(x => x.ErrorCode is 502 or 503 or 504
                                        || x.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
             .Or<HttpRequestException>()
+            .OrResult<ChatResponseInfo>(x => string.IsNullOrWhiteSpace(x.Text) && x.DataContents.Count == 0)
             .WaitAndRetryAsync(retryCount: 2, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200))
             .ExecuteAndCaptureAsync(async () => await _chatService.GetResponseAsync(
                 chatId,
