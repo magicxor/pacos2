@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using Microsoft.Extensions.AI;
 using Pacos.Constants;
+using Pacos.Models;
 
 namespace Pacos.Services.GenerativeAi;
 
@@ -50,7 +51,7 @@ public sealed class ChatService : IDisposable
         return _chatSemaphores.GetOrAdd(chatId, _ => new SemaphoreSlim(initialCount: 1, maxCount: 1));
     }
 
-    public async Task<(string Text, IReadOnlyCollection<DataContent> DataContents)> GetResponseAsync(
+    public async Task<ChatResponseInfo> GetResponseAsync(
         long chatId,
         long messageId,
         string authorName,
@@ -148,7 +149,7 @@ public sealed class ChatService : IDisposable
                 responseText = "♿ " + responseText;
             }
 
-            return (responseText, dataContents);
+            return new ChatResponseInfo(responseText, dataContents);
         }
         finally
         {
