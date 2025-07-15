@@ -25,7 +25,7 @@ Pacos is a .NET-based Telegram bot designed to interact in group chats. It lever
 
 - **Framework**: .NET (Worker Service)
 - **Telegram API**: `Telegram.Bot` library
-- **Generative AI (Chat)**: `Microsoft.Extensions.AI` with Google's Gemini Pro model (`gemini-2.5-pro-preview-06-05`)
+- **Generative AI (Chat)**: `Microsoft.Extensions.AI` with Google's Gemini Pro model (`gemini-2.5-pro`)
 - **Generative AI (Image)**: Direct integration with Google's Generative AI for image model (`gemini-2.0-flash-preview-image-generation`)
 - **Logging**: NLog (configured via `nlog.config`)
 - **Configuration**: Standard .NET configuration (e.g., `appsettings.json`, environment variables)
@@ -35,22 +35,14 @@ Pacos is a .NET-based Telegram bot designed to interact in group chats. It lever
 
 The bot requires the following configuration settings, typically provided via environment variables or an `appsettings.json` file under the `Pacos` section:
 
-- `TelegramBotApiKey`: Your Telegram Bot API token.
-- `GoogleCloudApiKey`: Your Google Cloud API key for accessing generative AI services.
-- `AllowedChatIds`: An array of Telegram chat IDs where the bot is permitted to operate.
-- `AllowedLanguageCodes`: An array of ISO 639-3 language codes (e.g., "eng", "rus") that the bot primarily interacts with.
-
-## Key Components
-
-- **`Program.cs`**: Entry point, sets up dependency injection, configuration, and services.
-- **`Worker.cs`**: Main background service that initializes and runs the `TelegramBotService`.
-- **`TelegramBotService.cs`**: Handles all interactions with the Telegram API, including receiving updates, processing commands, and sending messages/photos.
-- **`ChatService.cs`**: Manages chat history and interacts with the AI chat client to generate text responses.
-- **`GenerativeModelService.cs`**: Interacts with the Google AI models for both text-to-image and image-to-image generation.
-- **`PacosOptions.cs`**: Defines the structure for application configuration.
-- **`Const.cs`**: Contains global constants, including AI system prompts, command names, and various limits.
-- **Background Tasks (`BackgroundTaskQueue.cs`, `QueuedHostedService.cs`)**: Manages asynchronous execution of tasks.
-- **`WordFilter.cs`**: Service for checking messages against a list of banned words.
+- `TelegramBotApiKey`: Your Telegram Bot API token (required).
+- `GoogleCloudApiKey`: Your Google Cloud API key for accessing generative AI services (required).
+- `AllowedChatIds`: An array of Telegram chat IDs where the bot is permitted to operate (required).
+- `ChatModel`: The AI model to use for chat responses (required).
+- `ImageGenerationModel`: The AI model to use for image generation (required).
+- `WebProxy`: Optional proxy server URL for network requests.
+- `WebProxyLogin`: Optional username for proxy authentication.
+- `WebProxyPassword`: Optional password for proxy authentication.
 
 ## Setup and Running
 
