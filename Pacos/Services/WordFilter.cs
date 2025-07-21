@@ -6,7 +6,7 @@ public sealed class WordFilter
 
     public WordFilter(string[] bannedWords)
     {
-        _bannedWords = bannedWords;
+        _bannedWords = bannedWords.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
     }
 
     public bool ContainsBannedWords(string message)
