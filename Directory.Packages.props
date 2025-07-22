@@ -17,6 +17,7 @@
     </GlobalPackageReference>
     <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.13.0.120203" />
     <GlobalPackageReference Include="SharpSource" Version="1.27.1" />
+    <GlobalPackageReference Include="Nullable.Extended.Analyzer" Version="1.15.6581" />
   </ItemGroup>
   <!-- Package versions -->
   <ItemGroup>

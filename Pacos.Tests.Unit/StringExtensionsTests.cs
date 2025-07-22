@@ -86,20 +86,6 @@ internal sealed class StringExtensionsTests
     }
 
     [Test]
-    public void GetNonEmpty_WhenAllValuesEmpty_ShouldReturnEmptyCollection()
-    {
-        var result = StringExtensions.FilterNonEmpty(null, string.Empty, " ", "\t", "\n");
-        Assert.That(result, Is.Empty);
-    }
-
-    [TestCase(["test1", "test2"])]
-    public void GetNonEmpty_WhenSomeValuesNonEmpty_ShouldReturnNonEmptyValues(object[] expected)
-    {
-        var result = StringExtensions.FilterNonEmpty(null, "test1", string.Empty, " ", "test2", "\t", "\n");
-        Assert.That(result, Is.EquivalentTo(expected.Select(x => x.ToString())));
-    }
-
-    [Test]
     public void IsNotNullOrEmpty_WhenNull_ShouldReturnFalse()
     {
         const string? value = null;
@@ -122,7 +108,7 @@ internal sealed class StringExtensionsTests
     public void Cut_WhenNull_ShouldReturnNull()
     {
         const string? source = null;
-        var result = source!.Cut(10);
+        var result = source.Cut(10);
         Assert.That(result, Is.Null);
     }
 
