@@ -80,16 +80,8 @@ public static class StringExtensions
     }
 
     [Pure]
-    public static IReadOnlyCollection<string> FilterNonEmpty(params string?[] values)
-    {
-        return values
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x!)
-            .ToList();
-    }
-
-    [Pure]
-    public static string Cut(this string text, int length)
+    [return: NotNullIfNotNull(nameof(text))]
+    public static string? Cut(this string? text, int length)
     {
         if (!string.IsNullOrEmpty(text) && text.Length > length)
         {
