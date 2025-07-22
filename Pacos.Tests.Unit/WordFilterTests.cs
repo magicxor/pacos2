@@ -7,7 +7,7 @@ namespace Pacos.Tests.Unit;
 internal sealed class WordFilterTests
 {
     private readonly string[] _testBannedWords = ["spam", "badword", "inappropriate"];
-    private WordFilter _wordFilter = null!;
+    private WordFilter _wordFilter = new([]);
 
     [SetUp]
     public void SetUp()
@@ -36,7 +36,7 @@ internal sealed class WordFilterTests
     public void ContainsBannedWords_WhenMessageIsNull_ShouldReturnFalse()
     {
         const string? message = null;
-        var result = _wordFilter.ContainsBannedWords(message!);
+        var result = _wordFilter.ContainsBannedWords(message);
 
         Assert.That(result, Is.False);
     }

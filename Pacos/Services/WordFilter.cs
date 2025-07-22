@@ -9,7 +9,7 @@ public sealed class WordFilter
         _bannedWords = bannedWords.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
     }
 
-    public bool ContainsBannedWords(string message)
+    public bool ContainsBannedWords(string? message)
     {
         return !string.IsNullOrWhiteSpace(message)
                && _bannedWords.Any(bannedWord => message.Contains(bannedWord, StringComparison.OrdinalIgnoreCase));
