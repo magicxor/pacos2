@@ -140,15 +140,17 @@ internal sealed class StringExtensionsTests
     [TestCase("1234", 4, "1234")] // Length == text length
     [TestCase("12345", 4, "1...")] // Length < text length, length = 4
     [TestCase("1234", 3, "...")] // Length < text length, length = 3
+    [TestCase("123", 2, "12")] // Length < text length, length = 2
+    [TestCase("12", 1, "1")] // Length < text length, length = 1
+    [TestCase("1", 1, "1")] // Length == text length, length = 1
     public void Cut_WhenTextLengthNotExceedsLengthOrLengthIs3_ShouldReturnExpected(string source, int maxLength, string expected)
     {
         var result = source.Cut(maxLength);
         Assert.That(result, Is.EqualTo(expected));
     }
 
-    [TestCase("abc", 0)]
-    [TestCase("abc", 1)]
-    [TestCase("abc", 2)]
+    [TestCase("abc", -1)]
+    [TestCase("abc", -2)]
     public void Cut_WhenLengthIsLessThan3_ShouldThrowArgumentOutOfRangeException(string source, int maxLength)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.Cut(maxLength));

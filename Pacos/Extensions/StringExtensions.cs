@@ -100,9 +100,15 @@ public static class StringExtensions
     [return: NotNullIfNotNull(nameof(text))]
     public static string? Cut(this string? text, int maxLength)
     {
+        const string ellipsis = "...";
         if (!string.IsNullOrEmpty(text) && text.Length > maxLength)
         {
-            text = string.Concat(text.AsSpan(0, maxLength - 3), "...");
+            if (maxLength < ellipsis.Length)
+            {
+                return text.AsSpan(0, maxLength).ToString();
+            }
+
+            text = string.Concat(text.AsSpan(0, maxLength - 3), ellipsis);
         }
 
         return text;
