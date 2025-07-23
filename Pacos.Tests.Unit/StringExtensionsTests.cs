@@ -7,10 +7,10 @@ namespace Pacos.Tests.Unit;
 internal sealed class StringExtensionsTests
 {
     [Test]
-    public void TryLeft_WhenNull_ShouldReturnNull()
+    public void TakeLeft_WhenNull_ShouldReturnNull()
     {
         const string? source = null;
-        var result = source.TryLeft(1);
+        var result = source.TakeLeft(1);
         Assert.That(result, Is.Null);
     }
 
@@ -26,24 +26,24 @@ internal sealed class StringExtensionsTests
     [TestCase("abc", 3, "abc")]
     [TestCase("abc", 4, "abc")]
     [TestCase("abc", 999, "abc")]
-    public void TryLeft_WhenArgumentsValid_ShouldReturnExpectedResult(string source, int maxLength, string expectedResult)
+    public void TakeLeft_WhenArgumentsValid_ShouldReturnExpectedResult(string source, int maxLength, string expectedResult)
     {
-        var actualResult = source.TryLeft(maxLength);
+        var actualResult = source.TakeLeft(maxLength);
         Assert.That(actualResult, Is.EqualTo(expectedResult));
     }
 
     [TestCase("", -1)]
     [TestCase("a", -2)]
-    public void TryLeft_WhenMaxLengthIsLessThanZero_ShouldThrowArgumentOutOfRangeException(string source, int maxLength)
+    public void TakeLeft_WhenMaxLengthIsLessThanZero_ShouldThrowArgumentOutOfRangeException(string source, int maxLength)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.TryLeft(maxLength));
+        Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.TakeLeft(maxLength));
     }
 
     [Test]
-    public void TryRight_WhenNull_ShouldReturnNull()
+    public void TakeRight_WhenNull_ShouldReturnNull()
     {
         const string? source = null;
-        var result = source.TryRight(1);
+        var result = source.TakeRight(1);
         Assert.That(result, Is.Null);
     }
 
@@ -59,17 +59,17 @@ internal sealed class StringExtensionsTests
     [TestCase("abc", 3, "abc")]
     [TestCase("abc", 4, "abc")]
     [TestCase("abc", 999, "abc")]
-    public void TryRight_WhenArgumentsValid_ShouldReturnExpectedResult(string source, int maxLength, string expectedResult)
+    public void TakeRight_WhenArgumentsValid_ShouldReturnExpectedResult(string source, int maxLength, string expectedResult)
     {
-        var actualResult = source.TryRight(maxLength);
+        var actualResult = source.TakeRight(maxLength);
         Assert.That(actualResult, Is.EqualTo(expectedResult));
     }
 
     [TestCase("", -1)]
     [TestCase("a", -2)]
-    public void TryRight_WhenMaxLengthIsLessThanZero_ShouldThrowArgumentOutOfRangeException(string source, int maxLength)
+    public void TakeRight_WhenMaxLengthIsLessThanZero_ShouldThrowArgumentOutOfRangeException(string source, int maxLength)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.TryRight(maxLength));
+        Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.TakeRight(maxLength));
     }
 
     [TestCase(null, null, true)]
@@ -105,6 +105,25 @@ internal sealed class StringExtensionsTests
     }
 
     [Test]
+    public void IsNullOrEmpty_WhenNull_ShouldReturnTrue()
+    {
+        const string? value = null;
+        Assert.That(value.IsNullOrEmpty(), Is.True);
+    }
+
+    [Test]
+    public void IsNullOrEmpty_WhenEmpty_ShouldReturnTrue()
+    {
+        Assert.That(string.Empty.IsNullOrEmpty(), Is.True);
+    }
+
+    [Test]
+    public void IsNullOrEmpty_WhenNonEmpty_ShouldReturnFalse()
+    {
+        Assert.That("test".IsNullOrEmpty(), Is.False);
+    }
+
+    [Test]
     public void Cut_WhenNull_ShouldReturnNull()
     {
         const string? source = null;
@@ -121,17 +140,19 @@ internal sealed class StringExtensionsTests
     [TestCase("1234", 4, "1234")] // Length == text length
     [TestCase("12345", 4, "1...")] // Length < text length, length = 4
     [TestCase("1234", 3, "...")] // Length < text length, length = 3
-    public void Cut_WhenTextLengthNotExceedsLengthOrLengthIs3_ShouldReturnExpected(string source, int length, string expected)
+    [TestCase("123", 2, "12")] // Length < text length, length = 2
+    [TestCase("12", 1, "1")] // Length < text length, length = 1
+    [TestCase("1", 1, "1")] // Length == text length, length = 1
+    public void Cut_WhenTextLengthNotExceedsLengthOrLengthIs3_ShouldReturnExpected(string source, int maxLength, string expected)
     {
-        var result = source.Cut(length);
+        var result = source.Cut(maxLength);
         Assert.That(result, Is.EqualTo(expected));
     }
 
-    [TestCase("abc", 0)]
-    [TestCase("abc", 1)]
-    [TestCase("abc", 2)]
-    public void Cut_WhenLengthIsLessThan3_ShouldThrowArgumentOutOfRangeException(string source, int length)
+    [TestCase("abc", -1)]
+    [TestCase("abc", -2)]
+    public void Cut_WhenLengthIsLessThan3_ShouldThrowArgumentOutOfRangeException(string source, int maxLength)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.Cut(length));
+        Assert.Throws<ArgumentOutOfRangeException>(() => _ = source.Cut(maxLength));
     }
 }
