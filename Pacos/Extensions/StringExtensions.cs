@@ -100,6 +100,8 @@ public static class StringExtensions
     [return: NotNullIfNotNull(nameof(text))]
     public static string? Cut(this string? text, int maxLength)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, 0);
+
         const string ellipsis = "...";
         if (!string.IsNullOrEmpty(text) && text.Length > maxLength)
         {
