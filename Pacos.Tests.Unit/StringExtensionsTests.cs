@@ -133,6 +133,7 @@ internal sealed class StringExtensionsTests
 
     [TestCase("", 0, "")]
     [TestCase("", 10, "")]
+    [TestCase("abc", 0, "")]
     [TestCase("abc", 10, "abc")] // Length > text length
     [TestCase("abcdef", 6, "abcdef")] // Length == text length
     [TestCase("abcdefghij", 10, "abcdefghij")] // Length == text length
@@ -146,6 +147,7 @@ internal sealed class StringExtensionsTests
     public void Cut_WhenTextLengthNotExceedsLengthOrLengthIs3_ShouldReturnExpected(string source, int maxLength, string expected)
     {
         var result = source.Cut(maxLength);
+        Assert.That(result, Has.Length.LessThanOrEqualTo(maxLength));
         Assert.That(result, Is.EqualTo(expected));
     }
 

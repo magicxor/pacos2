@@ -124,7 +124,8 @@ public sealed class MentionHandler
         return result switch
         {
             { Outcome: OutcomeType.Failure, FinalException: not null } => throw result.FinalException,
-            { Outcome: OutcomeType.Failure, FinalException: null } => throw new InvalidOperationException("Unexpected failure without an exception in the result."),
+            { Outcome: OutcomeType.Failure, FinalException: null } when string.IsNullOrWhiteSpace(result.Result.Text) => throw new InvalidOperationException("Empty AI response."),
+            { Outcome: OutcomeType.Failure, FinalException: null } => throw new InvalidOperationException("Unexpected failure without an exception."),
             _ => result.Result,
         };
     }
