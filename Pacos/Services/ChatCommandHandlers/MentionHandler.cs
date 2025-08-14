@@ -106,13 +106,13 @@ public sealed class MentionHandler
         byte[]? fileBytes = null,
         string? fileMimeType = null)
     {
-        var result = await Policy
+        return await Policy
             .Handle<ApiException>(x => x.ErrorCode is 502 or 503 or 504
                                        || x.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
             .Or<HttpRequestException>()
             .OrResult<ChatResponseInfo>(x => string.IsNullOrWhiteSpace(x.Text) && x.DataContents.Count == 0)
             .WaitAndRetryAsync(retryCount: 2, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200))
-            .ExecuteAndCaptureAsync(async () => await _chatService.GetResponseAsync(
+            .ExecuteAsync(async () => await _chatService.GetResponseAsync(
                 chatId,
                 messageId,
                 authorName,
@@ -120,14 +120,6 @@ public sealed class MentionHandler
                 fileBytes,
                 fileMimeType
             ));
-
-        return result switch
-        {
-            { Outcome: OutcomeType.Failure, FinalException: not null } => throw result.FinalException,
-            { Outcome: OutcomeType.Failure, FinalException: null } when string.IsNullOrWhiteSpace(result.Result.Text) => throw new InvalidOperationException("Empty AI response."),
-            { Outcome: OutcomeType.Failure, FinalException: null } => throw new InvalidOperationException("Unexpected failure without an exception."),
-            _ => result.Result,
-        };
     }
 
     public async Task HandleMentionAsync(
@@ -234,22 +226,13 @@ public sealed class MentionHandler
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "Failed to get chat response for {Author}", author);
             replyText = $"{e.GetType().Name}: {e.Message}";
         }
 
         var markdownReplyText = _markdownConversionService.ConvertToTelegramMarkdown(replyText);
 
         _logger.LogInformation("Replying to {Author} with: {ReplyText}", author, replyText);
-
-        async Task SendReply(string text, ParseMode parseMode)
-        {
-            await botClient.SendMessage(
-                new ChatId(updateMessage.Chat.Id),
-                text,
-                parseMode,
-                new ReplyParameters { MessageId = updateMessage.MessageId, },
-                cancellationToken: cancellationToken);
-        }
 
         try
         {
@@ -259,6 +242,18 @@ public sealed class MentionHandler
         {
             _logger.LogError(e, "Failed to send message with MarkdownV2. Falling back to plain text");
             await SendReply(replyText, ParseMode.None);
+        }
+
+        return;
+
+        async Task SendReply(string text, ParseMode parseMode)
+        {
+            await botClient.SendMessage(
+                new ChatId(updateMessage.Chat.Id),
+                text,
+                parseMode,
+                new ReplyParameters { MessageId = updateMessage.MessageId, },
+                cancellationToken: cancellationToken);
         }
     }
 }
