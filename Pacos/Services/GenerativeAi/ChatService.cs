@@ -29,7 +29,7 @@ public sealed class ChatService : IDisposable
         var systemPrompt = Const.SystemPrompt
                            + (isGroupChat
                                ? Environment.NewLine + Environment.NewLine + Const.GroupChatRuleSystemPrompt
-                               : string.Empty)
+                               : Environment.NewLine + Environment.NewLine + Const.PersonalChatRuleSystemPrompt)
                            + Environment.NewLine
                            + Environment.NewLine
                            + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}";
