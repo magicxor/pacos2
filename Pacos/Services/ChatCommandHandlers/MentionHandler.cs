@@ -100,6 +100,7 @@ public sealed class MentionHandler
 
     private async Task<ChatResponseInfo> GetChatResponseWithRetryAsync(
         long chatId,
+        bool isGroupChat,
         long messageId,
         string authorName,
         string messageText,
@@ -114,6 +115,7 @@ public sealed class MentionHandler
             .WaitAndRetryAsync(retryCount: 2, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200))
             .ExecuteAsync(async () => await _chatService.GetResponseAsync(
                 chatId,
+                isGroupChat,
                 messageId,
                 authorName,
                 messageText,
@@ -126,6 +128,7 @@ public sealed class MentionHandler
         ITelegramBotClient botClient,
         Message updateMessage,
         string messageText,
+        bool isGroupChat,
         string author,
         string currentMention,
         CancellationToken cancellationToken)
@@ -211,6 +214,7 @@ public sealed class MentionHandler
                 _ when _wordFilter.ContainsBannedWords(fullMessageToLlm) => "ты пидор, кстати",
                 _ => (await GetChatResponseWithRetryAsync(
                         updateMessage.Chat.Id,
+                        isGroupChat,
                         updateMessage.Id,
                         author,
                         fullMessageToLlm,
