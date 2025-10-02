@@ -24,9 +24,12 @@ public sealed class ChatService : IDisposable
         _timeProvider = timeProvider;
     }
 
-    private ChatMessage GetSystemPrompt(string? previousChatSummary = null)
+    private ChatMessage GetSystemPrompt(bool isGroupChat, string? previousChatSummary = null)
     {
         var systemPrompt = Const.SystemPrompt
+                           + (isGroupChat
+                               ? Environment.NewLine + Environment.NewLine + Const.GroupChatRuleSystemPrompt
+                               : string.Empty)
                            + Environment.NewLine
                            + Environment.NewLine
                            + $"Дата начала текущей сессии: {_timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd hh:mm:ss", CultureInfo.InvariantCulture)}";
@@ -53,6 +56,7 @@ public sealed class ChatService : IDisposable
 
     public async Task<ChatResponseInfo> GetResponseAsync(
         long chatId,
+        bool isGroupChat,
         long messageId,
         string authorName,
         string messageText,
@@ -64,7 +68,7 @@ public sealed class ChatService : IDisposable
 
         try
         {
-            var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [GetSystemPrompt()]);
+            var chatHistory = _chatHistories.GetOrAdd(chatId, _ => [GetSystemPrompt(isGroupChat)]);
             var wasHistorySummarized = false;
             var wasSummarizationFailed = false;
 
@@ -81,7 +85,7 @@ public sealed class ChatService : IDisposable
                     _logger.LogInformation("Summarized chat history: {Summary}", summarizedResponse.Text);
 
                     chatHistory.Clear();
-                    chatHistory.Add(GetSystemPrompt(summarizedResponse.Text));
+                    chatHistory.Add(GetSystemPrompt(isGroupChat, summarizedResponse.Text));
 
                     wasHistorySummarized = true;
                 }
@@ -91,7 +95,7 @@ public sealed class ChatService : IDisposable
                     wasSummarizationFailed = true;
 
                     chatHistory.Clear();
-                    chatHistory.Add(GetSystemPrompt());
+                    chatHistory.Add(GetSystemPrompt(isGroupChat));
                 }
             }
 
