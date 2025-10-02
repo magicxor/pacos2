@@ -78,7 +78,8 @@ public sealed class TelegramBotService
                 }
                 else if (!string.IsNullOrEmpty(currentMention))
                 {
-                    await _mentionHandler.HandleMentionAsync(botClient, update.Message, message, author, currentMention, cancellationToken);
+                    var isGroupChat = update.Message.Chat.Type is ChatType.Group or ChatType.Supergroup;
+                    await _mentionHandler.HandleMentionAsync(botClient, update.Message, message, isGroupChat, author, currentMention, cancellationToken);
                 }
             }
         }
