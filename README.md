@@ -1,6 +1,7 @@
 # Pacos Telegram Bot
 
 [![master branch - test, build, push, deploy](https://github.com/magicxor/pacos2/actions/workflows/on_master_push.yml/badge.svg)](https://github.com/magicxor/pacos2/actions/workflows/on_master_push.yml)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/magicxor/pacos2)
 
 Pacos is a .NET-based Telegram bot designed to interact in group chats. It leverages generative AI for chat responses and image generation.
 
