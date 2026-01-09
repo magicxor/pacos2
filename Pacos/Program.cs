@@ -28,7 +28,6 @@ namespace Pacos;
 public sealed class Program
 {
     private const string NLogConfigFileName = "nlog.config";
-    private const string BanWordsFileName = "banwords.txt";
     private const string RankedLanguageIdentifierFileName = "Core14.profile.xml";
     private const int BackgroundTaskQueueCapacity = 100;
 
@@ -104,10 +103,6 @@ public sealed class Program
                             x.TotalRequestTimeout = new HttpTimeoutStrategyOptions { Timeout = x.AttemptTimeout.Timeout * 2 };
                             x.CircuitBreaker.SamplingDuration = x.AttemptTimeout.Timeout * 2;
                         });
-
-                    var bannedWords = File.Exists(BanWordsFileName)
-                        ? File.ReadAllLines(BanWordsFileName)
-                        : [];
 
                     services.AddSingleton<VideoConverter>();
                     services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
