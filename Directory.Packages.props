@@ -46,13 +46,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="NUnit3TestAdapter" Version="6.0.1" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="6.1.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Polly" Version="8.6.5" />
     <PackageVersion Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageVersion Include="Refit" Version="9.0.2" />
-    <PackageVersion Include="Telegram.Bot" Version="22.7.6" />
-    <PackageVersion Include="Verify" Version="31.9.2" />
-    <PackageVersion Include="Verify.NUnit" Version="31.9.2" />
+    <PackageVersion Include="Telegram.Bot" Version="22.8.1" />
+    <PackageVersion Include="Verify" Version="31.9.3" />
+    <PackageVersion Include="Verify.NUnit" Version="31.9.3" />
   </ItemGroup>
 </Project>
