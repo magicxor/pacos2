@@ -1,5 +1,6 @@
 ﻿using Pacos.Constants;
 using Pacos.Extensions;
+using Pacos.Models;
 using Pacos.Services.GenerativeAi;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,13 +11,16 @@ public sealed class DrawHandler
 {
     private readonly ILogger<DrawHandler> _logger;
     private readonly ImageGenerationService _imageGenerationService;
+    private readonly TelegramMediaService _telegramMediaService;
 
     public DrawHandler(
         ILogger<DrawHandler> logger,
-        ImageGenerationService imageGenerationService)
+        ImageGenerationService imageGenerationService,
+        TelegramMediaService telegramMediaService)
     {
         _logger = logger;
         _imageGenerationService = imageGenerationService;
+        _telegramMediaService = telegramMediaService;
     }
 
     public async Task HandleDrawAsync(
@@ -29,41 +33,45 @@ public sealed class DrawHandler
         var prompt = messageText.Substring(Const.DrawCommand.Length).Trim();
         _logger.LogInformation("Processing {Command} command from {Author} with prompt: {Prompt}", Const.DrawCommand, author, prompt);
 
-        PhotoSize[]? sourcePhotoSizes = null;
-        string photoSourceMessageContext = "current command message"; // For logging
+        TelegramFileMetadata? sourceFileMetadata = null;
+        string mediaSourceContext = "current command message";
 
-        // 1. Check current message for photo
-        if (updateMessage.Photo is { Length: > 0 })
+        // 1. Check current message for photo or sticker
+        var currentMessageMetadata = GetImageMetadata(updateMessage);
+        if (currentMessageMetadata != null)
         {
-            sourcePhotoSizes = updateMessage.Photo;
+            sourceFileMetadata = currentMessageMetadata;
         }
-        // 2. If no photo in current message, AND it's a reply, AND replied-to message has photo
-        else if (updateMessage.ReplyToMessage?.Photo is { Length: > 0 })
+        // 2. If no media in current message, AND it's a reply, check replied-to message
+        else if (updateMessage.ReplyToMessage != null)
         {
-            sourcePhotoSizes = updateMessage.ReplyToMessage.Photo;
-            photoSourceMessageContext = "replied-to message";
-            _logger.LogInformation("No photo in !draw command by {Author}, attempting to use photo from replied-to message", author);
+            var replyMetadata = GetImageMetadata(updateMessage.ReplyToMessage);
+            if (replyMetadata != null)
+            {
+                sourceFileMetadata = replyMetadata;
+                mediaSourceContext = "replied-to message";
+                _logger.LogInformation("No image in !draw command by {Author}, attempting to use image from replied-to message", author);
+            }
         }
 
         // Indicates image-to-image is possible
-        if (sourcePhotoSizes != null)
+        if (sourceFileMetadata != null)
         {
             // Image-to-Image
-            _logger.LogInformation("Performing image-to-image for {Author} using photo from {PhotoSourceContext}", author, photoSourceMessageContext);
-            var photoSize = sourcePhotoSizes.Last();
-            var fileInfo = await botClient.GetFile(photoSize.FileId, cancellationToken);
+            _logger.LogInformation("Performing image-to-image for {Author} using media from {MediaSourceContext}", author, mediaSourceContext);
 
-            await using var memoryStream = new MemoryStream();
-            await botClient.DownloadFile(fileInfo.FilePath ?? string.Empty, memoryStream, cancellationToken);
-            var imageBytes = memoryStream.ToArray();
-            var mimeType = fileInfo.FilePath?.Split('.').LastOrDefault() switch
+            var (imageBytes, downloadError) = await _telegramMediaService.DownloadMediaAsync(sourceFileMetadata, botClient, cancellationToken);
+            if (imageBytes == null)
             {
-                "png" => "image/png",
-                "webp" => "image/webp",
-                _ => "image/jpeg",
-            };
+                await botClient.SendMessage(
+                    chatId: updateMessage.Chat.Id,
+                    text: $"Failed to download image: {downloadError}",
+                    replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId },
+                    cancellationToken: cancellationToken);
+                return;
+            }
 
-            var (replyText, generatedImageData, generatedImageMime, error) = await _imageGenerationService.GenerateImageToImageAsync(prompt, imageBytes, mimeType);
+            var (replyText, generatedImageData, generatedImageMime, error) = await _imageGenerationService.GenerateImageToImageAsync(prompt, imageBytes, sourceFileMetadata.MimeType);
             if (generatedImageData != null)
             {
                 await botClient.SendPhoto(
@@ -72,21 +80,21 @@ public sealed class DrawHandler
                     caption: replyText?.Cut(Const.MaxTelegramCaptionLength),
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId }, // Always reply to the command message ID
                     cancellationToken: cancellationToken);
-                _logger.LogInformation("Sent image-to-image result (photo from {PhotoSourceContext}) to {Author}", photoSourceMessageContext, author);
+                _logger.LogInformation("Sent image-to-image result (media from {MediaSourceContext}) to {Author}", mediaSourceContext, author);
             }
             else
             {
                 await botClient.SendMessage(
                     chatId: updateMessage.Chat.Id,
-                    text: !string.IsNullOrWhiteSpace(replyText) ? replyText : $"Sorry, couldn't generate image from image (photo from {photoSourceMessageContext}): {error}",
+                    text: !string.IsNullOrWhiteSpace(replyText) ? replyText : $"Sorry, couldn't generate image from image (media from {mediaSourceContext}): {error}",
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId },
                     cancellationToken: cancellationToken);
-                _logger.LogWarning("Failed image-to-image for {Author} (photo from {PhotoSourceContext}): {Error}", author, photoSourceMessageContext, error);
+                _logger.LogWarning("Failed image-to-image for {Author} (media from {MediaSourceContext}): {Error}", author, mediaSourceContext, error);
             }
         }
         else
         {
-            /* Fallback to Text-to-Image if no suitable photo found */
+            /* Fallback to Text-to-Image if no suitable image found */
             // Text-to-Image
             if (string.IsNullOrWhiteSpace(prompt))
             {
@@ -119,5 +127,17 @@ public sealed class DrawHandler
                 _logger.LogWarning("Failed text-to-image for {Author}: {Error}", author, error);
             }
         }
+    }
+
+    /// <summary>
+    /// Gets image metadata from a message (Photo or Sticker only).
+    /// Returns null for other media types.
+    /// </summary>
+    private static TelegramFileMetadata? GetImageMetadata(Message message)
+    {
+        var metadata = TelegramMediaService.GetFileMetadata(message);
+        return metadata?.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true
+            ? metadata
+            : null;
     }
 }

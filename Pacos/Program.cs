@@ -148,6 +148,7 @@ public sealed class Program
                     services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
                     services.AddSingleton<ChatService>();
                     services.AddSingleton<ImageGenerationService>();
+                    services.AddSingleton<TelegramMediaService>();
                     services.AddSingleton<DrawHandler>();
                     services.AddSingleton<ResetHandler>();
                     services.AddSingleton<MentionHandler>();
