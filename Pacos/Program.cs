@@ -21,6 +21,8 @@ using Pacos.Services.VideoConversion;
 using Telegram.Bot;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
+#pragma warning disable S6667
+
 namespace Pacos;
 
 public sealed class Program
@@ -149,7 +151,6 @@ public sealed class Program
                     });
                     services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
                     services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
-                    services.AddSingleton<WordFilter>(_ => new WordFilter(bannedWords));
                     services.AddSingleton<ChatService>();
                     services.AddSingleton<ImageGenerationService>();
                     services.AddSingleton<DrawHandler>();
@@ -171,9 +172,7 @@ public sealed class Program
         catch (OperationCanceledException)
         {
             // This is expected when the application is shutting down gracefully
-#pragma warning disable S6667
             LogManager.GetCurrentClassLogger().Info("Application shut down gracefully.");
-#pragma warning restore S6667
         }
         finally
         {

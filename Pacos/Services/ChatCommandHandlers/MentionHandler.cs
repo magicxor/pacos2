@@ -1,5 +1,4 @@
 using GenerativeAI.Exceptions;
-using Microsoft.Extensions.AI;
 using NTextCat;
 using Pacos.Constants;
 using Pacos.Extensions;
@@ -18,7 +17,6 @@ public sealed class MentionHandler
 {
     private readonly ILogger<MentionHandler> _logger;
     private readonly RankedLanguageIdentifier _rankedLanguageIdentifier;
-    private readonly WordFilter _wordFilter;
     private readonly ChatService _chatService;
     private readonly MarkdownConversionService _markdownConversionService;
     private readonly VideoConverter _videoConverter;
@@ -26,14 +24,12 @@ public sealed class MentionHandler
     public MentionHandler(
         ILogger<MentionHandler> logger,
         RankedLanguageIdentifier rankedLanguageIdentifier,
-        WordFilter wordFilter,
         ChatService chatService,
         MarkdownConversionService markdownConversionService,
         VideoConverter videoConverter)
     {
         _logger = logger;
         _rankedLanguageIdentifier = rankedLanguageIdentifier;
-        _wordFilter = wordFilter;
         _chatService = chatService;
         _markdownConversionService = markdownConversionService;
         _videoConverter = videoConverter;
@@ -205,27 +201,25 @@ public sealed class MentionHandler
             fullMessageToLlm = $"{fullMessageToLlm}\n\n[Media download error: {media.ErrorMessage}]";
         }
 
-        var replyText = string.Empty;
+        string replyText;
 
         try
         {
-            replyText = messageText switch
-            {
-                _ when _wordFilter.ContainsBannedWords(fullMessageToLlm) => "ты пидор, кстати",
-                _ => (await GetChatResponseWithRetryAsync(
-                        updateMessage.Chat.Id,
-                        isGroupChat,
-                        updateMessage.Id,
-                        author,
-                        fullMessageToLlm,
-                        media.FileBytes,
-                        fileMetadata?.MimeType
-                     )).Text,
-            };
+            replyText = (await GetChatResponseWithRetryAsync(
+                updateMessage.Chat.Id,
+                isGroupChat,
+                updateMessage.Id,
+                author,
+                fullMessageToLlm,
+                media.FileBytes,
+                fileMetadata?.MimeType
+            )).Text;
+
             replyText = replyText.Cut(Const.MaxTelegramMessageLength);
+
             if (string.IsNullOrWhiteSpace(replyText))
             {
-                replyText = "игнорирую 😏";
+                replyText = "Error: Received empty response from chat service.";
             }
         }
         catch (Exception e)
