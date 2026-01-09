@@ -17,8 +17,6 @@ Pacos is a .NET-based Telegram bot designed to interact in group chats. It lever
     - **Image-to-Image**: Modify existing images by replying to a message containing an image (or sending an image directly with the command) using `!drawx <prompt>`.
 - **Chat Management**:
     - **Reset History**: Users can clear the bot's memory for a specific chat with the `!resetx` command.
-- **Content Moderation**:
-    - **Word Filter**: Filters messages against a list of banned words (defined in `banwords.txt`).
 - **Language Identification**: Detects the language of incoming messages to potentially tailor responses (using `NTextCat` with `Core14.profile.xml`).
 - **Asynchronous Processing**: Handles incoming Telegram updates and AI interactions asynchronously using a background task queue to ensure responsiveness.
 
@@ -49,7 +47,7 @@ The bot requires the following configuration settings, typically provided via en
 
 1.  Ensure you have the .NET SDK installed.
 2.  Configure the required API keys and settings (see **Configuration** section).
-3.  Create `banwords.txt` (if needed for word filtering) and `Core14.profile.xml` (for NTextCat language identification) in the application's root directory.
+3.  Create `Core14.profile.xml` (for NTextCat language identification) in the application's root directory.
 4.  Run the application:
     ```bash
     dotnet run
