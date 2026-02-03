@@ -75,7 +75,12 @@ public sealed class MentionHandler
     {
         // Remove the mention from the message
         messageText = messageText.Substring(currentMention.Length).TrimStart(',', ' ', '.', '!', '?', ':', ';').Trim();
-        if (string.IsNullOrEmpty(messageText))
+
+        // Check for replied-to message text
+        var repliedToMessageText = (updateMessage.ReplyToMessage?.Text ?? updateMessage.ReplyToMessage?.Caption ?? string.Empty).Trim();
+
+        // Only exit early if both message and replied-to message are empty
+        if (string.IsNullOrEmpty(messageText) && string.IsNullOrEmpty(repliedToMessageText))
         {
             return;
         }
@@ -89,7 +94,7 @@ public sealed class MentionHandler
 
         if (updateMessage.ReplyToMessage != null)
         {
-            var repliedToMessageText = (updateMessage.ReplyToMessage.Text ?? updateMessage.ReplyToMessage.Caption ?? string.Empty).Trim();
+            repliedToMessageText = (updateMessage.ReplyToMessage.Text ?? updateMessage.ReplyToMessage.Caption ?? string.Empty).Trim();
             if (!string.IsNullOrEmpty(repliedToMessageText))
             {
                 var repliedToAuthor = updateMessage.ReplyToMessage.From?.Username ??
@@ -116,7 +121,7 @@ public sealed class MentionHandler
             author,
             languageCode,
             messageText,
-            originalMessageLogInfo); // Log user's message and info about replied message
+            originalMessageLogInfo);
 
         var fileMetadata = TelegramMediaService.GetFileMetadata(updateMessage) ?? TelegramMediaService.GetFileMetadata(updateMessage.ReplyToMessage);
         _logger.LogInformation("Media info for message from {Author}: FileId={FileId}, MimeType={MimeType}",
