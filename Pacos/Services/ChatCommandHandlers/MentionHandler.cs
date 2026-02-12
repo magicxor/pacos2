@@ -164,9 +164,6 @@ public sealed class MentionHandler
                 fileMetadata?.MimeType
             )).Text;
 
-            // Release potentially large media bytes from async state machine after last use
-            media.FileBytes = null;
-
             replyText = replyText.Cut(Const.MaxTelegramMessageLength);
 
             if (string.IsNullOrWhiteSpace(replyText))
