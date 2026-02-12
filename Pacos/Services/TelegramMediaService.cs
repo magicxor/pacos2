@@ -60,7 +60,7 @@ public sealed class TelegramMediaService
 
         try
         {
-            var initialCapacity = fileSize > 0 ? (int)Math.Min(fileSize.Value, maxFileSize) : 0;
+            var initialCapacity = fileSize is > 0 ? (int)Math.Min(fileSize.Value, maxFileSize) : 0;
             await using var memoryStream = initialCapacity > 0 ? new MemoryStream(initialCapacity) : new MemoryStream();
             await botClient.DownloadFile(fileInfo.FilePath, memoryStream, cancellationToken);
             var downloadedBytes = memoryStream.ToArray();
