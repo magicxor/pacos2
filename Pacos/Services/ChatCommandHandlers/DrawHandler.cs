@@ -74,9 +74,10 @@ public sealed class DrawHandler
             var (replyText, generatedImageData, generatedImageMime, error) = await _imageGenerationService.GenerateImageToImageAsync(prompt, imageBytes, sourceFileMetadata.MimeType);
             if (generatedImageData != null)
             {
+                await using var generatedImageStream = new MemoryStream(generatedImageData);
                 await botClient.SendPhoto(
                     chatId: updateMessage.Chat.Id,
-                    photo: new InputFileStream(new MemoryStream(generatedImageData), "generated_image.png"),
+                    photo: new InputFileStream(generatedImageStream, "generated_image.png"),
                     caption: replyText?.Cut(Const.MaxTelegramCaptionLength),
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId }, // Always reply to the command message ID
                     cancellationToken: cancellationToken);
@@ -109,9 +110,10 @@ public sealed class DrawHandler
             var (replyText, generatedImageData, generatedImageMime, error) = await _imageGenerationService.GenerateTextToImageAsync(prompt);
             if (generatedImageData != null)
             {
+                await using var generatedImageStream = new MemoryStream(generatedImageData);
                 await botClient.SendPhoto(
                     chatId: updateMessage.Chat.Id,
-                    photo: new InputFileStream(new MemoryStream(generatedImageData), "generated_image.png"),
+                    photo: new InputFileStream(generatedImageStream, "generated_image.png"),
                     caption: replyText?.Cut(Const.MaxTelegramCaptionLength),
                     replyParameters: new ReplyParameters { MessageId = updateMessage.MessageId },
                     cancellationToken: cancellationToken);
