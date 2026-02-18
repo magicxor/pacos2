@@ -1,0 +1,80 @@
+Держи, сделал.
+
+1.  ### Swift
+    В Swift для этого есть ключевое слово `lazy`. Важный момент: ленивые свойства должны быть переменными (`var`), а не константами (`let`), потому что их значение меняется после инициализации объекта.
+
+    ```swift
+    class DataManager {
+        // heavyData не будет загружаться, пока кто-нибудь не попробует его прочитать
+        lazy var heavyData: [String] = {
+            print("Ща будет тяжело...")
+            // какая-то очень долгая операция
+            return ["один", "два", "три"]
+        }()
+    }
+
+    let manager = DataManager() // Здесь еще ничего не происходит
+    print("Объект создан")
+    print(manager.heavyData) // Вот тут heavyData инициализируется и выводится "Ща будет тяжело..."
+    print(manager.heavyData) // Повторный доступ уже не вызывает инициализацию
+    ```
+
+2.  ### Kotlin
+    В Kotlin используется делегат `by lazy`. По умолчанию он потокобезопасен, что важно для многопоточных приложений.
+
+    ```kotlin
+    class OurLanguageParser {
+        // Регулярки скомпилируются только при первом обращении к ним
+        val cardRegex by lazy {
+            println("Компилю регулярку для карточки...")
+            Regex("...")
+        }
+        val questionRegex by lazy {
+            println("Компилю регулярку для вопроса...")
+            Regex("...")
+        }
+    }
+
+    val parser = OurLanguageParser() // Ничего не компилируется
+    println("Парсер готов")
+    println(parser.cardRegex) // "Компилю регулярку для карточки..."
+    println(parser.cardRegex) // Второй раз ничего не происходит
+    ```
+
+3.  ### Python
+    В Python нет встроенного ключевого слова, но ленивые свойства легко реализуются через дескрипторы или декораторы.
+
+    ```python
+    class lazy_property:
+        def __init__(self, func):
+            self.func = func
+            self.name = func.__name__
+
+        def __get__(self, instance, owner):
+            if instance is None:
+                return self
+            # Вычисляем значение и сразу же заменяем
+            # свойство-дескриптор на результат вычислений
+            result = self.func(instance)
+            setattr(instance, self.name, result)
+            return result
+
+    class DataManager:
+        def __init__(self):
+            print("DataManager создан")
+
+        @lazy_property
+        def heavy_data(self):
+            print("Загружаю тяжелые данные...")
+            # тут может быть запрос к API, базе данных и т.д.
+            return list(range(10_000_000))
+
+    manager = DataManager() # "DataManager создан"
+    print("Доступ к данным...")
+    # Первый доступ вызовет "Загружаю тяжелые данные..."
+    data_len = len(manager.heavy_data)
+    print(f"Длина данных: {data_len}")
+    # Второй доступ уже не будет ничего грузить
+    data_len = len(manager.heavy_data)
+    print(f"Длина данных (снова): {data_len}")
+    ```
