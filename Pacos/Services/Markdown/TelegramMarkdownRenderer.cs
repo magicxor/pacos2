@@ -558,13 +558,13 @@ public sealed class TelegramMarkdownRenderer
 
     private void TrimTrailingBlankLine()
     {
-        // Remove one trailing newline if the output ends with two consecutive newlines
+        // Normalize multiple trailing blank lines with '\n' endings to a single trailing '\n'
         while (_output.Length >= 2 && _output[^1] == '\n' && _output[^2] == '\n')
         {
             _output.Length--;
         }
 
-        // Also handle \r\n line endings
+        // Also normalize multiple trailing blank lines with '\r\n' endings to a single trailing '\r\n'
         while (_output.Length >= 4 && _output[^1] == '\n' && _output[^2] == '\r' && _output[^3] == '\n' && _output[^4] == '\r')
         {
             _output.Length -= 2;
