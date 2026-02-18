@@ -48,7 +48,7 @@ public sealed class TelegramMarkdownRenderer
                 RenderTable(table);
                 break;
             case ThematicBreakBlock:
-                _output.AppendLine("\n\\-\\-\\-\n");
+                _output.AppendLine("\\-\\-\\-\n");
                 break;
             case HtmlBlock html:
                 RenderHtmlBlock(html);
