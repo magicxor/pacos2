@@ -278,6 +278,17 @@ public sealed class TelegramMarkdownRenderer
                         string nestedListContent = RenderListDirectly(nestedList, indent + "  ");
                         nestedOutput.Append(nestedListContent.TrimEnd());
                     }
+                    else
+                    {
+                        if (!isFirstBlock)
+                        {
+                            nestedOutput.AppendLine();
+                        }
+                        var blockRenderer = new TelegramMarkdownRenderer();
+                        blockRenderer.RenderBlock(block);
+                        blockRenderer.TrimTrailingBlankLine();
+                        nestedOutput.Append(blockRenderer._output.ToString().TrimEnd());
+                    }
                     isFirstBlock = false;
                 }
             }

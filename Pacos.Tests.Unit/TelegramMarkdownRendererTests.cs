@@ -119,4 +119,15 @@ internal sealed class TelegramMarkdownRendererTests
 
         await Verify(actualTelegramMarkdown, VerifySettings);
     }
+
+    [Test]
+    public async Task Render_WhenHasNestedListBlocksMarkdown_ShouldReturnValidMarkdown()
+    {
+        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "nested_list_blocks.md"));
+
+        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
+        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
+
+        await Verify(actualTelegramMarkdown, VerifySettings);
+    }
 }

@@ -66,6 +66,10 @@
     <Content Include="Files\complex_list.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Remove="Files\nested_list_blocks.md" />
+    <Content Include="Files\nested_list_blocks.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
