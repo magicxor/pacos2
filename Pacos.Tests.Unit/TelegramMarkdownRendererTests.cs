@@ -44,90 +44,22 @@ internal sealed class TelegramMarkdownRendererTests
     }
 
     [Test]
-    public async Task Render_WhenHasCheckboxes_ShouldReturnValidMarkdown()
+    [TestCase("checkbox_test.md")]
+    [TestCase("image_test.md")]
+    [TestCase("table_test.md")]
+    [TestCase("test_all_en.md")]
+    [TestCase("test_all_ru.md")]
+    [TestCase("quote_bug.md")]
+    [TestCase("complex_list.md")]
+    [TestCase("nested_list_blocks.md")]
+    [TestCase("task_list_formatting.md")]
+    public async Task Render_ShouldReturnValidMarkdown(string fileName)
     {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "checkbox_test.md"));
+        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", fileName));
 
         var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
         var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
 
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasImages_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "image_test.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasTables_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "table_test.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasComplexMarkdownEn_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "test_all_en.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasComplexMarkdownRu_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "test_all_ru.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasQuotes_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "quote_bug.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasComplexListMarkdownRu_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "complex_list.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
-    }
-
-    [Test]
-    public async Task Render_WhenHasNestedListBlocksMarkdown_ShouldReturnValidMarkdown()
-    {
-        var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", "nested_list_blocks.md"));
-
-        var standardMarkdownDoc = Markdown.Parse(standardMarkdown, MarkdownPipeline);
-        var actualTelegramMarkdown = new TelegramMarkdownRenderer().Render(standardMarkdownDoc);
-
-        await Verify(actualTelegramMarkdown, VerifySettings);
+        await Verify(actualTelegramMarkdown, VerifySettings).UseParameters(fileName);
     }
 }

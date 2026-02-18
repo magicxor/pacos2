@@ -70,6 +70,10 @@
     <Content Include="Files\nested_list_blocks.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Remove="Files\task_list_formatting.md" />
+    <Content Include="Files\task_list_formatting.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
