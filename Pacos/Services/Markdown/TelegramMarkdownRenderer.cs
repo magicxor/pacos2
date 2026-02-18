@@ -153,6 +153,11 @@ public sealed class TelegramMarkdownRenderer
                 {
                     if (block is ParagraphBlock para)
                     {
+                        if (!isFirstBlock)
+                        {
+                            _output.AppendLine();
+                            _output.AppendLine();
+                        }
                         if (para.Inline != null)
                         {
                             foreach (var inline in para.Inline)
@@ -244,10 +249,16 @@ public sealed class TelegramMarkdownRenderer
             else
             {
                 // For regular lists, render all blocks normally
+                bool isFirstBlock = true;
                 foreach (var block in item)
                 {
                     if (block is ParagraphBlock para)
                     {
+                        if (!isFirstBlock)
+                        {
+                            nestedOutput.AppendLine();
+                            nestedOutput.AppendLine();
+                        }
                         if (para.Inline != null)
                         {
                             foreach (var inline in para.Inline)
@@ -264,6 +275,7 @@ public sealed class TelegramMarkdownRenderer
                         string nestedListContent = RenderListDirectly(nestedList, indent + "  ");
                         nestedOutput.Append(nestedListContent.TrimEnd());
                     }
+                    isFirstBlock = false;
                 }
             }
             nestedOutput.AppendLine();
