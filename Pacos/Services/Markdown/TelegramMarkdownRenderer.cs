@@ -48,7 +48,7 @@ public sealed class TelegramMarkdownRenderer
                 RenderTable(table);
                 break;
             case ThematicBreakBlock:
-                _output.AppendLine("\n\\-\\-\\-\n");
+                _output.AppendLine("\\-\\-\\-\n");
                 break;
             case HtmlBlock html:
                 RenderHtmlBlock(html);
@@ -101,7 +101,7 @@ public sealed class TelegramMarkdownRenderer
             // Check if this is a task list item
             bool isTaskList = false;
             string checkboxText = string.Empty;
-            string remainingText = string.Empty;
+            Inline? taskListContentStart = null;
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
@@ -117,12 +117,7 @@ public sealed class TelegramMarkdownRenderer
 
                     checkboxText = isChecked ? @"\[x\] " : @"\[ \] ";
 
-                    // Get the remaining text from the second inline element (LiteralInline)
-                    var secondInline = firstInline.NextSibling;
-                    if (secondInline is LiteralInline literal)
-                    {
-                        remainingText = literal.Content.ToString();
-                    }
+                    taskListContentStart = firstInline.NextSibling;
                 }
             }
 
@@ -142,8 +137,13 @@ public sealed class TelegramMarkdownRenderer
 
             if (isTaskList)
             {
-                // For task lists, just output the remaining text after checkbox
-                _output.Append(EscapeText(remainingText));
+                // Render all inline elements after the checkbox
+                var current = taskListContentStart;
+                while (current != null)
+                {
+                    RenderInline(current);
+                    current = current.NextSibling;
+                }
             }
             else
             {
@@ -153,6 +153,11 @@ public sealed class TelegramMarkdownRenderer
                 {
                     if (block is ParagraphBlock para)
                     {
+                        if (!isFirstBlock)
+                        {
+                            _output.AppendLine();
+                            _output.AppendLine();
+                        }
                         if (para.Inline != null)
                         {
                             foreach (var inline in para.Inline)
@@ -178,6 +183,9 @@ public sealed class TelegramMarkdownRenderer
                             _output.AppendLine();
                         }
                         RenderBlock(block);
+                        // Remove trailing blank line added by block renderers (e.g. RenderQuote)
+                        // to avoid double spacing — the list item loop adds its own newline
+                        TrimTrailingBlankLine();
                     }
                     isFirstBlock = false;
                 }
@@ -197,7 +205,7 @@ public sealed class TelegramMarkdownRenderer
             // Check if this is a task list item
             bool isTaskList = false;
             string checkboxText = string.Empty;
-            string remainingText = string.Empty;
+            Inline? taskListContentStart = null;
 
             if (!list.IsOrdered && item.Count > 0 && item[0] is ParagraphBlock firstPara && firstPara.Inline != null)
             {
@@ -213,12 +221,7 @@ public sealed class TelegramMarkdownRenderer
 
                     checkboxText = isChecked ? @"\[x\] " : @"\[ \] ";
 
-                    // Get the remaining text from the second inline element (LiteralInline)
-                    var secondInline = firstInline.NextSibling;
-                    if (secondInline is LiteralInline literal)
-                    {
-                        remainingText = literal.Content.ToString();
-                    }
+                    taskListContentStart = firstInline.NextSibling;
                 }
             }
 
@@ -238,16 +241,29 @@ public sealed class TelegramMarkdownRenderer
 
             if (isTaskList)
             {
-                // For task lists, just output the remaining text after checkbox
-                nestedOutput.Append(EscapeText(remainingText));
+                // Render all inline elements after the checkbox
+                var current = taskListContentStart;
+                while (current != null)
+                {
+                    var inlineRenderer = new TelegramMarkdownRenderer();
+                    inlineRenderer.RenderInline(current);
+                    nestedOutput.Append(inlineRenderer._output);
+                    current = current.NextSibling;
+                }
             }
             else
             {
                 // For regular lists, render all blocks normally
+                bool isFirstBlock = true;
                 foreach (var block in item)
                 {
                     if (block is ParagraphBlock para)
                     {
+                        if (!isFirstBlock)
+                        {
+                            nestedOutput.AppendLine();
+                            nestedOutput.AppendLine();
+                        }
                         if (para.Inline != null)
                         {
                             foreach (var inline in para.Inline)
@@ -264,6 +280,18 @@ public sealed class TelegramMarkdownRenderer
                         string nestedListContent = RenderListDirectly(nestedList, indent + "  ");
                         nestedOutput.Append(nestedListContent.TrimEnd());
                     }
+                    else
+                    {
+                        if (!isFirstBlock)
+                        {
+                            nestedOutput.AppendLine();
+                        }
+                        var blockRenderer = new TelegramMarkdownRenderer();
+                        blockRenderer.RenderBlock(block);
+                        blockRenderer.TrimTrailingBlankLine();
+                        nestedOutput.Append(blockRenderer._output.ToString().TrimEnd());
+                    }
+                    isFirstBlock = false;
                 }
             }
             nestedOutput.AppendLine();
@@ -538,6 +566,21 @@ public sealed class TelegramMarkdownRenderer
             default:
                 // Ignore other HTML tags
                 break;
+        }
+    }
+
+    private void TrimTrailingBlankLine()
+    {
+        // Normalize multiple trailing blank lines with '\n' endings to a single trailing '\n'
+        while (_output.Length >= 2 && _output[^1] == '\n' && _output[^2] == '\n')
+        {
+            _output.Length--;
+        }
+
+        // Also normalize multiple trailing blank lines with '\r\n' endings to a single trailing '\r\n'
+        while (_output.Length >= 4 && _output[^1] == '\n' && _output[^2] == '\r' && _output[^3] == '\n' && _output[^4] == '\r')
+        {
+            _output.Length -= 2;
         }
     }
 
