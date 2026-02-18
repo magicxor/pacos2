@@ -183,6 +183,9 @@ public sealed class TelegramMarkdownRenderer
                             _output.AppendLine();
                         }
                         RenderBlock(block);
+                        // Remove trailing blank line added by block renderers (e.g. RenderQuote)
+                        // to avoid double spacing — the list item loop adds its own newline
+                        TrimTrailingBlankLine();
                     }
                     isFirstBlock = false;
                 }
@@ -550,6 +553,21 @@ public sealed class TelegramMarkdownRenderer
             default:
                 // Ignore other HTML tags
                 break;
+        }
+    }
+
+    private void TrimTrailingBlankLine()
+    {
+        // Remove one trailing newline if the output ends with two consecutive newlines
+        while (_output.Length >= 2 && _output[^1] == '\n' && _output[^2] == '\n')
+        {
+            _output.Length--;
+        }
+
+        // Also handle \r\n line endings
+        while (_output.Length >= 4 && _output[^1] == '\n' && _output[^2] == '\r' && _output[^3] == '\n' && _output[^4] == '\r')
+        {
+            _output.Length -= 2;
         }
     }
 
