@@ -48,7 +48,8 @@ public sealed class TelegramMarkdownRenderer
                 RenderTable(table);
                 break;
             case ThematicBreakBlock:
-                _output.AppendLine("\\-\\-\\-\n");
+                _output.AppendLine("\\-\\-\\-");
+                _output.AppendLine();
                 break;
             case HtmlBlock html:
                 RenderHtmlBlock(html);
@@ -77,7 +78,8 @@ public sealed class TelegramMarkdownRenderer
                 RenderInline(inline, true);
             }
         }
-        _output.AppendLine("*\n");
+        _output.AppendLine("*");
+        _output.AppendLine();
     }
 
     private void RenderParagraph(ParagraphBlock paragraph)
@@ -89,7 +91,8 @@ public sealed class TelegramMarkdownRenderer
                 RenderInline(inline);
             }
         }
-        _output.AppendLine("\n");
+        _output.AppendLine();
+        _output.AppendLine();
     }
 
     private void RenderList(ListBlock list)
@@ -149,6 +152,8 @@ public sealed class TelegramMarkdownRenderer
             {
                 // For regular lists, render all blocks normally
                 bool isFirstBlock = true;
+                bool previousBlockWasParagraph = false;
+                bool previousBlockWasNestedList = false;
                 foreach (var block in item)
                 {
                     if (block is ParagraphBlock para)
@@ -156,7 +161,10 @@ public sealed class TelegramMarkdownRenderer
                         if (!isFirstBlock)
                         {
                             _output.AppendLine();
-                            _output.AppendLine();
+                            if (previousBlockWasParagraph || (previousBlockWasNestedList && list.IsLoose))
+                            {
+                                _output.AppendLine();
+                            }
                         }
                         if (para.Inline != null)
                         {
@@ -165,15 +173,22 @@ public sealed class TelegramMarkdownRenderer
                                 RenderInline(inline);
                             }
                         }
+                        previousBlockWasParagraph = true;
+                        previousBlockWasNestedList = false;
                     }
                     else if (block is ListBlock nestedList)
                     {
                         // Add a line break before nested lists but no extra line
-                        _output.AppendLine();
+                        if (!isFirstBlock)
+                        {
+                            _output.AppendLine();
+                        }
                         var nestedRenderer = new TelegramMarkdownRenderer();
                         string nestedContent = nestedRenderer.RenderListDirectly(nestedList, "  ");
                         // Remove the trailing newline from nested content to avoid double spacing
                         _output.Append(nestedContent.TrimEnd());
+                        previousBlockWasParagraph = false;
+                        previousBlockWasNestedList = true;
                     }
                     else
                     {
@@ -181,18 +196,24 @@ public sealed class TelegramMarkdownRenderer
                         if (!isFirstBlock)
                         {
                             _output.AppendLine();
+                            if (previousBlockWasParagraph && block is CodeBlock && list.IsLoose)
+                            {
+                                _output.AppendLine();
+                            }
                         }
                         RenderBlock(block);
                         // Remove trailing blank line added by block renderers (e.g. RenderQuote)
                         // to avoid double spacing — the list item loop adds its own newline
                         TrimTrailingBlankLine();
+                        previousBlockWasParagraph = false;
+                        previousBlockWasNestedList = false;
                     }
                     isFirstBlock = false;
                 }
             }
-            _output.AppendLine();
+            EnsureTrailingLineBreaks(_output, list.IsLoose ? 2 : 1);
         }
-        _output.AppendLine();
+        EnsureTrailingLineBreaks(_output, 2);
     }
 
     private string RenderListDirectly(ListBlock list, string indent)
@@ -255,6 +276,8 @@ public sealed class TelegramMarkdownRenderer
             {
                 // For regular lists, render all blocks normally
                 bool isFirstBlock = true;
+                bool previousBlockWasParagraph = false;
+                bool previousBlockWasNestedList = false;
                 foreach (var block in item)
                 {
                     if (block is ParagraphBlock para)
@@ -262,7 +285,10 @@ public sealed class TelegramMarkdownRenderer
                         if (!isFirstBlock)
                         {
                             nestedOutput.AppendLine();
-                            nestedOutput.AppendLine();
+                            if (previousBlockWasParagraph || (previousBlockWasNestedList && list.IsLoose))
+                            {
+                                nestedOutput.AppendLine();
+                            }
                         }
                         if (para.Inline != null)
                         {
@@ -273,28 +299,41 @@ public sealed class TelegramMarkdownRenderer
                                 nestedOutput.Append(inlineRenderer._output);
                             }
                         }
+                        previousBlockWasParagraph = true;
+                        previousBlockWasNestedList = false;
                     }
                     else if (block is ListBlock nestedList)
                     {
-                        nestedOutput.AppendLine();
+                        if (!isFirstBlock)
+                        {
+                            nestedOutput.AppendLine();
+                        }
                         string nestedListContent = RenderListDirectly(nestedList, indent + "  ");
                         nestedOutput.Append(nestedListContent.TrimEnd());
+                        previousBlockWasParagraph = false;
+                        previousBlockWasNestedList = true;
                     }
                     else
                     {
                         if (!isFirstBlock)
                         {
                             nestedOutput.AppendLine();
+                            if (previousBlockWasParagraph && block is CodeBlock && list.IsLoose)
+                            {
+                                nestedOutput.AppendLine();
+                            }
                         }
                         var blockRenderer = new TelegramMarkdownRenderer();
                         blockRenderer.RenderBlock(block);
                         blockRenderer.TrimTrailingBlankLine();
                         nestedOutput.Append(blockRenderer._output.ToString().TrimEnd());
+                        previousBlockWasParagraph = false;
+                        previousBlockWasNestedList = false;
                     }
                     isFirstBlock = false;
                 }
             }
-            nestedOutput.AppendLine();
+            EnsureTrailingLineBreaks(nestedOutput, list.IsLoose ? 2 : 1);
         }
         return nestedOutput.ToString();
     }
@@ -354,7 +393,8 @@ public sealed class TelegramMarkdownRenderer
         {
             _output.AppendLine(EscapeCodeContent(line.ToString() ?? string.Empty));
         }
-        _output.AppendLine("```\n");
+        _output.AppendLine("```");
+        _output.AppendLine();
     }
 
     private void RenderTable(Table table)
@@ -389,7 +429,8 @@ public sealed class TelegramMarkdownRenderer
             }
         }
 
-        _output.AppendLine("```\n");
+        _output.AppendLine("```");
+        _output.AppendLine();
     }
 
     private void RenderHtmlBlock(HtmlBlock html)
@@ -403,7 +444,8 @@ public sealed class TelegramMarkdownRenderer
         content = Regex.Replace(content, "<code>(.*?)</code>", "`$1`", RegexOptions.IgnoreCase);
         content = Regex.Replace(content, "<[^>]+>", string.Empty, RegexOptions.IgnoreCase); // Remove other HTML tags
 
-        _output.AppendLine(EscapeText(content) + "\n");
+        _output.AppendLine(EscapeText(content));
+        _output.AppendLine();
     }
 
     private void RenderInline(Inline inline, bool insideFormatting = false)
@@ -581,6 +623,44 @@ public sealed class TelegramMarkdownRenderer
         while (_output.Length >= 4 && _output[^1] == '\n' && _output[^2] == '\r' && _output[^3] == '\n' && _output[^4] == '\r')
         {
             _output.Length -= 2;
+        }
+    }
+
+    private static void EnsureTrailingLineBreaks(StringBuilder output, int lineBreakCount)
+    {
+        int trailingLineBreaks = 0;
+        int i = output.Length - 1;
+
+        while (i >= 0)
+        {
+            if (output[i] == '\n')
+            {
+                trailingLineBreaks++;
+                i--;
+                if (i >= 0 && output[i] == '\r')
+                {
+                    i--;
+                }
+                continue;
+            }
+
+            if (output[i] == '\r')
+            {
+                i--;
+                continue;
+            }
+
+            break;
+        }
+
+        if (trailingLineBreaks > 0)
+        {
+            output.Length = i + 1;
+        }
+
+        for (int j = 0; j < lineBreakCount; j++)
+        {
+            output.AppendLine();
         }
     }
 
