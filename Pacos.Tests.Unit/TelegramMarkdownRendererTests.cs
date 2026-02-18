@@ -18,7 +18,7 @@ internal sealed class TelegramMarkdownRendererTests
     [OneTimeSetUp]
     public void OneTimeSetUp()
     {
-        // VerifySettings.DisableDiff();
+        VerifySettings.DisableDiff();
     }
 
     [Test]
@@ -53,6 +53,9 @@ internal sealed class TelegramMarkdownRendererTests
     [TestCase("complex_list.md")]
     [TestCase("nested_list_blocks.md")]
     [TestCase("task_list_formatting.md")]
+    [TestCase("nested_lists.md")]
+    [TestCase("code_blocks_list.md")]
+    [TestCase("code_blocks.md")]
     public async Task Render_ShouldReturnValidMarkdown(string fileName)
     {
         var standardMarkdown = await File.ReadAllTextAsync(Path.Combine("Files", fileName));
