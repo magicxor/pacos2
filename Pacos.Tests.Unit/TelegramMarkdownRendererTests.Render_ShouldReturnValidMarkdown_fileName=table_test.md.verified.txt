@@ -4,7 +4,6 @@
 
 Right     Left     Center     Default
 
-
 \-\-\-
 
 ```
@@ -15,12 +14,10 @@ Right     Left     Center     Default
 
 *Multiline Table*
 
-
 \-\-\-
 
 Centered   Default           Right Left
 Header    Aligned         Aligned Aligned
-
 
 \-\-\-
 
@@ -33,7 +30,6 @@ rows\.*
 
 The header may be omitted in multiline tables as well as simple tables:
 
-
 \-\-\-
 
 First    row                12\.0 Example of a row that
@@ -42,7 +38,6 @@ spans multiple lines\.
 Second    row                 5\.0 Here's another one\. Note
 the blank line between
 rows\.
-
 
 \-\-\-
 
