@@ -10,6 +10,7 @@ public sealed class ChatService : IDisposable
 {
     private readonly ILogger<ChatService> _logger;
     private readonly IChatClient _chatClient;
+    private readonly IChatClient? _fallbackChatClient;
     private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<long, List<ChatMessage>> _chatHistories = new();
     private readonly ConcurrentDictionary<long, SemaphoreSlim> _chatSemaphores = new();
@@ -17,12 +18,16 @@ public sealed class ChatService : IDisposable
     public ChatService(
         ILogger<ChatService> logger,
         IChatClient chatClient,
+        IChatClient? fallbackChatClient,
         TimeProvider timeProvider)
     {
         _logger = logger;
         _chatClient = chatClient;
+        _fallbackChatClient = fallbackChatClient;
         _timeProvider = timeProvider;
     }
+
+    public bool HasFallback => _fallbackChatClient is not null;
 
     private ChatMessage GetSystemPrompt(bool isGroupChat, string? previousChatSummary = null)
     {
@@ -61,7 +66,8 @@ public sealed class ChatService : IDisposable
         string authorName,
         string messageText,
         byte[]? fileBytes = null,
-        string? fileMimeType = null)
+        string? fileMimeType = null,
+        bool useFallback = false)
     {
         var chatSemaphore = GetOrCreateChatSemaphore(chatId);
         await chatSemaphore.WaitAsync();
@@ -113,7 +119,9 @@ public sealed class ChatService : IDisposable
                 Role = ChatRole.User,
             };
 
-            var responseObject = await _chatClient.GetResponseAsync(chatHistory.Concat([userMessage]));
+            var client = GetChatClient(useFallback);
+
+            var responseObject = await client.GetResponseAsync(chatHistory.Concat([userMessage]));
 
             chatHistory.Add(new ChatMessage(ChatRole.User, messageText));
 
@@ -150,7 +158,12 @@ public sealed class ChatService : IDisposable
 
             if (wasSummarizationFailed)
             {
-                responseText = "♿ " + responseText;
+                responseText = "📝❌ " + responseText;
+            }
+
+            if (useFallback)
+            {
+                responseText = "💥♿ " + responseText;
             }
 
             return new ChatResponseInfo(responseText, dataContents);
@@ -183,9 +196,20 @@ public sealed class ChatService : IDisposable
         }
     }
 
+    private IChatClient GetChatClient(bool useFallback)
+    {
+        if (useFallback && _fallbackChatClient is not null)
+        {
+            return _fallbackChatClient;
+        }
+
+        return _chatClient;
+    }
+
     public void Dispose()
     {
         _chatClient.Dispose();
+        _fallbackChatClient?.Dispose();
 
         // Dispose all chat semaphores
         foreach (var semaphore in _chatSemaphores.Values)
