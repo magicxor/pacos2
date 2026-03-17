@@ -47,28 +47,29 @@ public sealed class MentionHandler
         byte[]? fileBytes = null,
         string? fileMimeType = null)
     {
+        var retryPolicy = Policy
+            .Handle<ApiException>(x => x.ErrorCode is 502 or 503 or 504
+                                   || x.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
+            .Or<HttpRequestException>()
+            .OrResult<ChatResponseInfo>(x => string.IsNullOrWhiteSpace(x.Text) && x.DataContents.Count == 0)
+            .WaitAndRetryAsync(retryCount: 1, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200));
+
         try
         {
-            return await Policy
-                .Handle<ApiException>(x => x.ErrorCode is 502 or 503 or 504
-                                           || x.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
-                .Or<HttpRequestException>()
-                .OrResult<ChatResponseInfo>(x => string.IsNullOrWhiteSpace(x.Text) && x.DataContents.Count == 0)
-                .WaitAndRetryAsync(retryCount: 1, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200))
-                .ExecuteAsync(async () => await _chatService.GetResponseAsync(
-                    chatId,
-                    isGroupChat,
-                    messageId,
-                    authorName,
-                    messageText,
-                    fileBytes,
-                    fileMimeType
-                ));
+            return await retryPolicy.ExecuteAsync(() => _chatService.GetResponseAsync(
+                chatId,
+                isGroupChat,
+                messageId,
+                authorName,
+                messageText,
+                fileBytes,
+                fileMimeType
+            ));
         }
         catch (ApiException ex) when (ex.ErrorCode is 503 && _chatService.HasFallback)
         {
             _logger.LogWarning(ex, "Primary chat model unavailable after retry, switching to fallback model");
-            return await _chatService.GetResponseAsync(
+            return await retryPolicy.ExecuteAsync(() => _chatService.GetResponseAsync(
                 chatId,
                 isGroupChat,
                 messageId,
@@ -76,7 +77,8 @@ public sealed class MentionHandler
                 messageText,
                 fileBytes,
                 fileMimeType,
-                useFallback: true);
+                useFallback: true
+            ));
         }
     }
 
