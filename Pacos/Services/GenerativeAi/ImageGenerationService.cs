@@ -109,6 +109,7 @@ public sealed class ImageGenerationService
     public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateImageToImageAsync(string prompt, byte[] inputImageBytes, string mimeType)
     {
         var models = GetModelsWithFallback();
+        var modelUnavailable = false;
 
         for (var attempt = 0; attempt < models.Length; attempt++)
         {
@@ -151,6 +152,7 @@ public sealed class ImageGenerationService
             }
             catch (Exception ex) when (IsModelUnavailableException(ex) && attempt < models.Length - 1)
             {
+                modelUnavailable = true;
                 _logger.LogWarning(ex, "Model {Model} unavailable for image-to-image (attempt {Attempt}), will retry", models[attempt], attempt + 1);
             }
             catch (Exception ex)
@@ -158,6 +160,11 @@ public sealed class ImageGenerationService
                 _logger.LogError(ex, "Error during image-to-image generation for prompt: {Prompt}", prompt);
                 return (null, null, null, $"An error occurred while processing the image: {ex.Message}");
             }
+        }
+
+        if (modelUnavailable)
+        {
+            return (null, null, null, "The image generation model is currently unavailable. Please try again later.");
         }
 
         return (null, null, null, "An error occurred while processing the image.");
