@@ -119,7 +119,7 @@ public sealed class ChatService : IDisposable
                 Role = ChatRole.User,
             };
 
-            var client = useFallback && _fallbackChatClient is not null ? _fallbackChatClient : _chatClient;
+            var client = GetChatClient(useFallback);
 
             var responseObject = await client.GetResponseAsync(chatHistory.Concat([userMessage]));
 
@@ -194,6 +194,16 @@ public sealed class ChatService : IDisposable
         {
             chatSemaphore.Release();
         }
+    }
+
+    private IChatClient GetChatClient(bool useFallback)
+    {
+        if (useFallback && _fallbackChatClient is not null)
+        {
+            return _fallbackChatClient;
+        }
+
+        return _chatClient;
     }
 
     public void Dispose()
