@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Pacos.Constants;
 using Pacos.Enums;
 using Pacos.Models.Options;
+using System.Linq;
 
 namespace Pacos.Services.GenerativeAi;
 
@@ -52,8 +53,10 @@ public sealed class ImageGenerationService
     public async Task<(string? text, byte[]? imageData, string? mimeType, string? errorMessage)> GenerateTextToImageAsync(string prompt)
     {
         var models = GetModelsWithFallback();
+        var totalAttempts = models.Length;
+        var modelUnavailableEncountered = false;
 
-        for (var attempt = 0; attempt < models.Length; attempt++)
+        for (var attempt = 0; attempt < totalAttempts; attempt++)
         {
             try
             {
@@ -84,6 +87,7 @@ public sealed class ImageGenerationService
             }
             catch (Exception ex) when (IsModelUnavailableException(ex) && attempt < models.Length - 1)
             {
+                modelUnavailableEncountered = true;
                 _logger.LogWarning(ex, "Model {Model} unavailable for text-to-image (attempt {Attempt}), will retry", models[attempt], attempt + 1);
             }
             catch (Exception ex)
@@ -91,6 +95,12 @@ public sealed class ImageGenerationService
                 _logger.LogError(ex, "Error during text-to-image generation for prompt: {Prompt}", prompt);
                 return (null, null, null, $"An error occurred while generating the image: {ex.Message}");
             }
+        }
+
+        if (modelUnavailableEncountered)
+        {
+            var distinctModels = string.Join(", ", models.Distinct());
+            return (null, null, null, $"All image generation models are currently unavailable after {totalAttempts} attempt(s). Tried models: {distinctModels}.");
         }
 
         return (null, null, null, "An error occurred while generating the image.");
