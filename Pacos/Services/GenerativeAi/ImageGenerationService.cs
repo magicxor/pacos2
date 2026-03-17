@@ -85,10 +85,18 @@ public sealed class ImageGenerationService
 
                 return (response.Text, null, null, "Could not extract image from the response. The model might not have generated one.");
             }
-            catch (Exception ex) when (IsModelUnavailableException(ex) && attempt < models.Length - 1)
+            catch (Exception ex) when (IsModelUnavailableException(ex))
             {
                 modelUnavailableEncountered = true;
-                _logger.LogWarning(ex, "Model {Model} unavailable for text-to-image (attempt {Attempt}), will retry", models[attempt], attempt + 1);
+
+                if (attempt < totalAttempts - 1)
+                {
+                    _logger.LogWarning(ex, "Model {Model} unavailable for text-to-image (attempt {Attempt}), will retry", models[attempt], attempt + 1);
+                }
+                else
+                {
+                    _logger.LogWarning(ex, "Model {Model} unavailable for text-to-image on final attempt {Attempt}", models[attempt], attempt + 1);
+                }
             }
             catch (Exception ex)
             {
