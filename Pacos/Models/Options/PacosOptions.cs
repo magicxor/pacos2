@@ -18,8 +18,12 @@ public sealed class PacosOptions
     [Required]
     public required string ChatModel { get; set; }
 
+    public string? ChatModelFallback { get; set; }
+
     [Required]
     public required string ImageGenerationModel { get; set; }
+
+    public string? ImageGenerationModelFallback { get; set; }
 
     public required string? WebProxy { get; set; }
 
