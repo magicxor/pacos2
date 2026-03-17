@@ -112,41 +112,21 @@ public sealed class Program
                         ));
                     services.AddHostedService<QueuedHostedService>();
                     services.AddSingleton<MarkdownConversionService>();
-                    services.AddSingleton<IChatClient>(s =>
-                    {
-                        var chatGenerativeModel = new GenerativeModel(
-                            apiKey: s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
-                            model: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel,
-                            safetySettings: Const.SafetySettings,
-                            httpClient: s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.GoogleCloud)),
-                            logger: s.GetRequiredService<ILogger<GenerativeModel>>());
-
-                        chatGenerativeModel.EnableFunctions();
-
-                        chatGenerativeModel.FunctionCallingBehaviour.AutoCallFunction = true;
-                        chatGenerativeModel.FunctionCallingBehaviour.AutoReplyFunction = true;
-                        chatGenerativeModel.FunctionCallingBehaviour.FunctionEnabled = true;
-                        chatGenerativeModel.FunctionCallingBehaviour.AutoHandleBadFunctionCalls = true;
-
-                        chatGenerativeModel.UseGoogleSearch = true;
-                        chatGenerativeModel.UseGrounding = false;
-                        chatGenerativeModel.UseCodeExecutionTool = false;
-
-                        var chatClientObj = new GenerativeAIChatClient(
-                            adapter: chatGenerativeModel.Platform,
-                            modelName: s.GetRequiredService<IOptions<PacosOptions>>().Value.ChatModel)
-                        {
-                            AutoCallFunction = true,
-                        };
-
-                        // GenerativeAIChatClient recreates GenerativeModel, so we have to use a hack to set the model
-                        chatClientObj.ReplaceModel(chatGenerativeModel, s.GetRequiredService<ILogger<IChatClient>>());
-
-                        return chatClientObj;
-                    });
                     services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
                     services.AddSingleton<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load(RankedLanguageIdentifierFileName));
-                    services.AddSingleton<ChatService>();
+                    services.AddSingleton<ChatService>(s =>
+                    {
+                        var options = s.GetRequiredService<IOptions<PacosOptions>>().Value;
+                        var primaryClient = CreateChatClient(s, options.ChatModel);
+                        IChatClient? fallbackClient = !string.IsNullOrWhiteSpace(options.ChatModelFallback)
+                            ? CreateChatClient(s, options.ChatModelFallback)
+                            : null;
+                        return new ChatService(
+                            s.GetRequiredService<ILogger<ChatService>>(),
+                            primaryClient,
+                            fallbackClient,
+                            s.GetRequiredService<TimeProvider>());
+                    });
                     services.AddSingleton<ImageGenerationService>();
                     services.AddSingleton<TelegramMediaService>();
                     services.AddSingleton<DrawHandler>();
@@ -175,5 +155,38 @@ public sealed class Program
             // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
             LogManager.Shutdown();
         }
+    }
+
+    private static GenerativeAIChatClient CreateChatClient(IServiceProvider s, string modelName)
+    {
+        var chatGenerativeModel = new GenerativeModel(
+            apiKey: s.GetRequiredService<IOptions<PacosOptions>>().Value.GoogleCloudApiKey,
+            model: modelName,
+            safetySettings: Const.SafetySettings,
+            httpClient: s.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HttpClientType.GoogleCloud)),
+            logger: s.GetRequiredService<ILogger<GenerativeModel>>());
+
+        chatGenerativeModel.EnableFunctions();
+
+        chatGenerativeModel.FunctionCallingBehaviour.AutoCallFunction = true;
+        chatGenerativeModel.FunctionCallingBehaviour.AutoReplyFunction = true;
+        chatGenerativeModel.FunctionCallingBehaviour.FunctionEnabled = true;
+        chatGenerativeModel.FunctionCallingBehaviour.AutoHandleBadFunctionCalls = true;
+
+        chatGenerativeModel.UseGoogleSearch = true;
+        chatGenerativeModel.UseGrounding = false;
+        chatGenerativeModel.UseCodeExecutionTool = false;
+
+        var chatClientObj = new GenerativeAIChatClient(
+            adapter: chatGenerativeModel.Platform,
+            modelName: modelName)
+        {
+            AutoCallFunction = true,
+        };
+
+        // GenerativeAIChatClient recreates GenerativeModel, so we have to use a hack to set the model
+        chatClientObj.ReplaceModel(chatGenerativeModel, s.GetRequiredService<ILogger<IChatClient>>());
+
+        return chatClientObj;
     }
 }
