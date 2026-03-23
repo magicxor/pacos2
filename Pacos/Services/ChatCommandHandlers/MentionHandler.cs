@@ -66,9 +66,15 @@ public sealed class MentionHandler
                 fileMimeType
             ));
         }
-        catch (ApiException ex) when (ex.ErrorCode is 503 && _chatService.HasFallback)
+        catch (ApiException ex) when (ex.ErrorCode is 502 or 503 or 504)
         {
-            _logger.LogWarning(ex, "Primary chat model unavailable after retry, switching to fallback model");
+            if (!_chatService.HasFallback)
+            {
+                _logger.LogWarning(ex, "Primary chat model returned {ErrorCode} but no fallback model is configured", ex.ErrorCode);
+                throw;
+            }
+
+            _logger.LogWarning(ex, "Primary chat model returned {ErrorCode} after retry, switching to fallback model", ex.ErrorCode);
             return await retryPolicy.ExecuteAsync(() => _chatService.GetResponseAsync(
                 chatId,
                 isGroupChat,

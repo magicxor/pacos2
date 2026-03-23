@@ -117,12 +117,16 @@ public sealed class Program
                     services.AddSingleton<ChatService>(s =>
                     {
                         var options = s.GetRequiredService<IOptions<PacosOptions>>().Value;
+                        var logger = s.GetRequiredService<ILogger<ChatService>>();
                         var primaryClient = CreateChatClient(s, options.ChatModel);
                         IChatClient? fallbackClient = !string.IsNullOrWhiteSpace(options.ChatModelFallback)
                             ? CreateChatClient(s, options.ChatModelFallback)
                             : null;
+                        logger.LogInformation("Chat models configured — Primary: {PrimaryModel}, Fallback: {FallbackModel}",
+                            options.ChatModel,
+                            string.IsNullOrWhiteSpace(options.ChatModelFallback) ? "(none)" : options.ChatModelFallback);
                         return new ChatService(
-                            s.GetRequiredService<ILogger<ChatService>>(),
+                            logger,
                             primaryClient,
                             fallbackClient,
                             s.GetRequiredService<TimeProvider>());
