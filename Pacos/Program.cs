@@ -124,7 +124,7 @@ public sealed class Program
                             : null;
                         logger.LogInformation("Chat models configured — Primary: {PrimaryModel}, Fallback: {FallbackModel}",
                             options.ChatModel,
-                            options.ChatModelFallback ?? "(none)");
+                            string.IsNullOrWhiteSpace(options.ChatModelFallback) ? "(none)" : options.ChatModelFallback);
                         return new ChatService(
                             logger,
                             primaryClient,
