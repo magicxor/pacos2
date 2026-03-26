@@ -65,7 +65,7 @@ public sealed class Program
                             x.CircuitBreaker.SamplingDuration = x.AttemptTimeout.Timeout * 2;
                         });
 
-                    var googleRequestTimeout = TimeSpan.FromMinutes(2);
+                    var googleRequestTimeout = TimeSpan.FromSeconds(40);
                     services.AddHttpClient(nameof(HttpClientType.GoogleCloud), httpClient => httpClient.Timeout = googleRequestTimeout)
                         .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
                         {
