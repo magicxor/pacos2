@@ -71,7 +71,8 @@ public sealed class MentionHandler
                 fileMimeType
             ));
         }
-        catch (ApiException ex) when (ex.ErrorCode is 502 or 503 or 504)
+        catch (ApiException ex) when (ex.ErrorCode is 502 or 503 or 504
+                                       || ex.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
         {
             if (!_chatService.HasFallback)
             {
