@@ -93,7 +93,7 @@ public sealed class MentionHandler
             ));
         }
         catch (Exception ex) when (ex is TimeoutRejectedException or TimeoutException or HttpIOException
-                                        or TaskCanceledException { InnerException: TimeoutException })
+                                        or TaskCanceledException { InnerException: TimeoutException } or HttpRequestException)
         {
             if (!_chatService.HasFallback)
             {
