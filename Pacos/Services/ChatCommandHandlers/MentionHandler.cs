@@ -7,6 +7,7 @@ using Pacos.Services.GenerativeAi;
 using Pacos.Services.Markdown;
 using Pacos.Services.VideoConversion;
 using Polly;
+using Polly.Timeout;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -51,6 +52,10 @@ public sealed class MentionHandler
             .Handle<ApiException>(x => x.ErrorCode is 502 or 503 or 504
                                    || x.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true)
             .Or<HttpRequestException>()
+            .Or<TimeoutRejectedException>()
+            .Or<TimeoutException>()
+            .Or<HttpIOException>()
+            .Or<TaskCanceledException>(ex => ex.InnerException is TimeoutException)
             .OrResult<ChatResponseInfo>(x => string.IsNullOrWhiteSpace(x.Text) && x.DataContents.Count == 0)
             .WaitAndRetryAsync(retryCount: 1, retryNumber => TimeSpan.FromMilliseconds(retryNumber * 200));
 
@@ -75,6 +80,27 @@ public sealed class MentionHandler
             }
 
             _logger.LogWarning(ex, "Primary chat model returned {ErrorCode} after retry, switching to fallback model", ex.ErrorCode);
+            return await retryPolicy.ExecuteAsync(() => _chatService.GetResponseAsync(
+                chatId,
+                isGroupChat,
+                messageId,
+                authorName,
+                messageText,
+                fileBytes,
+                fileMimeType,
+                useFallback: true
+            ));
+        }
+        catch (Exception ex) when (ex is TimeoutRejectedException or TimeoutException or HttpIOException
+                                        or TaskCanceledException { InnerException: TimeoutException })
+        {
+            if (!_chatService.HasFallback)
+            {
+                _logger.LogWarning(ex, "Request failed with {ExceptionType} but no fallback model is configured", ex.GetType().Name);
+                throw;
+            }
+
+            _logger.LogWarning(ex, "Request failed with {ExceptionType} after retry, switching to fallback model", ex.GetType().Name);
             return await retryPolicy.ExecuteAsync(() => _chatService.GetResponseAsync(
                 chatId,
                 isGroupChat,

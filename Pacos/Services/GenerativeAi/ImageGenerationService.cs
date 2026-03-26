@@ -38,7 +38,18 @@ public sealed class ImageGenerationService
 
     private static bool IsModelUnavailableException(Exception ex)
     {
-        return ex is ApiException { ErrorCode: 503 };
+        if (ex is ApiException { ErrorCode: 502 or 503 or 504 }
+            or HttpRequestException
+            or Polly.Timeout.TimeoutRejectedException
+            or TimeoutException
+            or HttpIOException
+            or TaskCanceledException { InnerException: TimeoutException })
+        {
+            return true;
+        }
+
+        return ex is ApiException apiEx
+            && apiEx.ErrorMessage?.Contains("try again", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private string[] GetModelsWithFallback()
