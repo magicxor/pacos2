@@ -56,7 +56,7 @@ public sealed class Program
                         .ValidateOnStart();
 
                     var telegramRequestTimeout = TimeSpan.FromSeconds(40);
-                    services.AddHttpClient(nameof(HttpClientType.Telegram), httpClient => httpClient.Timeout = telegramRequestTimeout)
+                    services.AddHttpClient(nameof(HttpClientType.Telegram), httpClient => httpClient.Timeout = Timeout.InfiniteTimeSpan)
                         .AddDefaultLogger()
                         .AddStandardResilienceHandler(x =>
                         {
@@ -66,7 +66,7 @@ public sealed class Program
                         });
 
                     var googleRequestTimeout = TimeSpan.FromSeconds(40);
-                    services.AddHttpClient(nameof(HttpClientType.GoogleCloud), httpClient => httpClient.Timeout = googleRequestTimeout)
+                    services.AddHttpClient(nameof(HttpClientType.GoogleCloud), httpClient => httpClient.Timeout = Timeout.InfiniteTimeSpan)
                         .ConfigurePrimaryHttpMessageHandler((handler, serviceProvider) =>
                         {
                             var proxyAddress = serviceProvider.GetRequiredService<IOptions<PacosOptions>>().Value.WebProxy;
