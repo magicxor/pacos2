@@ -39,6 +39,31 @@ public sealed class MentionHandler
         _telegramMediaService = telegramMediaService;
     }
 
+    /// <summary>
+    /// Produces a human-readable description of where a forwarded message originally came from,
+    /// or <c>null</c> if the message is not a forward (or the origin type is unsupported).
+    /// </summary>
+    private static string? DescribeForwardOrigin(MessageOrigin? origin) => origin switch
+    {
+        MessageOriginUser user => DescribeUser(user.SenderUser),
+        MessageOriginHiddenUser hiddenUser => string.IsNullOrWhiteSpace(hiddenUser.SenderUserName)
+            ? "a hidden user"
+            : $"user {hiddenUser.SenderUserName}",
+        MessageOriginChannel channel => string.IsNullOrWhiteSpace(channel.AuthorSignature)
+            ? $"channel \"{channel.Chat.Title}\""
+            : $"channel \"{channel.Chat.Title}\" ({channel.AuthorSignature})",
+        MessageOriginChat chat => string.IsNullOrWhiteSpace(chat.AuthorSignature)
+            ? $"group \"{chat.SenderChat.Title}\""
+            : $"group \"{chat.SenderChat.Title}\" ({chat.AuthorSignature})",
+        _ => null,
+    };
+
+    private static string DescribeUser(User user)
+    {
+        var name = user.Username ?? string.Join(' ', user.FirstName, user.LastName).Trim();
+        return string.IsNullOrWhiteSpace(name) ? "an unknown user" : $"user {name}";
+    }
+
     private async Task<ChatResponseInfo> GetChatResponseWithRetryAsync(
         long chatId,
         bool isGroupChat,
@@ -155,8 +180,16 @@ public sealed class MentionHandler
                     repliedToAuthor = "Original Poster"; // Fallback if author is not available
                 }
 
-                fullMessageToLlm = $"{author} (replying to {repliedToAuthor}): {messageText}\n\n--- Original Message by {repliedToAuthor}: ---\n{repliedToMessageText}";
-                originalMessageLogInfo = $" | Original by {repliedToAuthor}: \"{repliedToMessageText.Cut(50)}\""; // Cut for brevity in logs
+                // If the replied-to message is itself a forward, surface its original source to the LLM
+                var forwardSource = DescribeForwardOrigin(updateMessage.ReplyToMessage.ForwardOrigin);
+                var originalMessageHeader = forwardSource != null
+                    ? $"--- Original Message by {repliedToAuthor} (forwarded from {forwardSource}): ---"
+                    : $"--- Original Message by {repliedToAuthor}: ---";
+
+                fullMessageToLlm = $"{author} (replying to {repliedToAuthor}): {messageText}\n\n{originalMessageHeader}\n{repliedToMessageText}";
+                originalMessageLogInfo = forwardSource != null
+                    ? $" | Original by {repliedToAuthor} (forwarded from {forwardSource}): \"{repliedToMessageText.Cut(50)}\"" // Cut for brevity in logs
+                    : $" | Original by {repliedToAuthor}: \"{repliedToMessageText.Cut(50)}\""; // Cut for brevity in logs
             }
             else
             {
