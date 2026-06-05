@@ -41,7 +41,7 @@ public sealed class MentionHandler
 
     /// <summary>
     /// Produces a human-readable description of where a forwarded message originally came from,
-    /// or <c>null</c> if the message is not a forward.
+    /// or <c>null</c> if the message is not a forward (or the origin type is unsupported).
     /// </summary>
     private static string? DescribeForwardOrigin(MessageOrigin? origin) => origin switch
     {
